@@ -1,0 +1,34 @@
+kind: csv-app
+app:
+  - name: httpserver
+    type: server
+    entrypoint: /workplace/app/httpserver
+    tls:
+      certPath: /workplace/encryptedData/certs/httpserver
+      commonName: 127.0.0.1
+    env:
+      test: test
+    args: []
+csvAssistants:
+  - name: network
+    type: job
+    entrypoint: /bin/bash
+    env:
+      ifName: ens3
+      ifIp: 10.10.11.237
+      ifNetmask: 255.255.255.0
+      ifGateway: 10.10.11.254
+    args: ["/workplace/csv-agent/csvassistants/network-tool/network-config.sh"]
+  - name: keyProvider
+    type: job
+    entrypoint: /workplace/csv-agent/csvassistants/keyprovider/key_provider_agent
+    env:
+      mode: local #local or kbs  
+      localKey: 00112233445566778899aabbccddeeff
+      kbsEndpoint: 127.0.0.1:1234  
+      attestion: csv
+    args: [""]
+
+
+
+

@@ -1,0 +1,49 @@
+{
+  "Issuer": {
+    "Country": [
+      "FR"
+    ],
+    "Organization": [
+      "IExec"
+    ],
+    "OrganizationalUnit": [
+      "IExec"
+    ],
+    "Locality": [
+      "Lyon"
+    ],
+    "Province": [
+      "Rhone"
+    ],
+    "StreetAddress": null,
+    "PostalCode": null,
+    "SerialNumber": "",
+    "CommonName": "csv-agent Root CA",
+    "Names": null,
+    "ExtraNames": null
+  },
+  "Subject": {
+    "Country": [
+      "FR"
+    ],
+    "Organization": [
+      "IExec"
+    ],
+    "OrganizationalUnit": [
+      "IExec"
+    ],
+    "Locality": [
+      "Lyon"
+    ],
+    "Province": [
+      "Rhone"
+    ],
+    "StreetAddress": null,
+    "PostalCode": null,
+    "SerialNumber": "",
+    "CommonName": "csv-agent Root CA",
+    "Names": null,
+    "ExtraNames": null
+  },
+  "IsCA": true
+}

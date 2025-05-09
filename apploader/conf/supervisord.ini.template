@@ -1,0 +1,14 @@
+[program:{{.Name}}]
+command={{.Command}}          
+directory={{.Workplace}}      ;c
+environment={{.Environment}}  ;
+priority={{.Priority}}        ;999
+numprocs=1                    ;
+autostart=false               ;supervisorapploader
+autorestart=true              ;
+startretries=10               ;
+exitcodes=0                   ;
+stopsignal=KILL               ;
+stopwaitsecs=10               ;SIGKIL
+redirect_stderr=true          ;stderstdout
+stopasgroup=true              ; kil
