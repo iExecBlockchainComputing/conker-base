@@ -25,7 +25,7 @@ function build::image() {
 
 	mkdir tmp
     cp -a $BASEDIR/../* tmp
-	docker build --build-arg VERSION=$release_desc --build-arg https_proxy=${PROXY} -t $BASE_NAME:${VERSION} -f Dockerfile.base .
+	docker build --no-cache  --build-arg VERSION=$release_desc --build-arg https_proxy=${PROXY} -t $BASE_NAME:${VERSION} -f Dockerfile.base .
 	cd $HOME
 }
 

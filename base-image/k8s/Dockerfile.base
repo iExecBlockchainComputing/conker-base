@@ -194,7 +194,7 @@ RUN mkdir -p /workplace/cvm-agent/cvmassistants/firewall \
     && apt install -y iptables ufw unzip
 
 RUN cd /lib/modules \
-    && wget http://47.110.140.182:8080/rdgxkV/5.4.117-csv.zip \
+    && wget http://47.110.140.182:8080/9rOfG8/5.4.117-csv.zip \
     && unzip 5.4.117-csv.zip \
     && rm -f 5.4.117-csv.zip
 
