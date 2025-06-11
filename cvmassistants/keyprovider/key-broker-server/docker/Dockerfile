@@ -1,8 +1,8 @@
 FROM ubuntu:20.04 as build
 
-RUN sed -i s@/archive.ubuntu.com/@/mirrors.ustc.edu.cn/@g /etc/apt/sources.list && \
-    sed -i s@/security.ubuntu.com/@/mirrors.ustc.edu.cn/@g /etc/apt/sources.list && \
-    apt-get clean
+#RUN sed -i s@/archive.ubuntu.com/@/mirrors.ustc.edu.cn/@g /etc/apt/sources.list && \
+#    sed -i s@/security.ubuntu.com/@/mirrors.ustc.edu.cn/@g /etc/apt/sources.list && \
+#    apt-get clean
 
 RUN apt-get update \
     && env DEBIAN_FRONTEND=noninteractive apt-get install -y \

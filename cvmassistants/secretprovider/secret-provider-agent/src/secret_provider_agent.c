@@ -156,7 +156,7 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
         LOG_ERROR("Failed to transmit %#x\n", ret);
         goto err;
     }
-    int buff_size = 2048;
+    int buff_size = 4096;
     char* buf = malloc(buff_size);
     len = buff_size;
     ret = rats_tls_receive(handle, buf, &len);
