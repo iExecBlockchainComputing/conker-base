@@ -7,7 +7,7 @@
 
 ## Overview
 
-This repository provides the base image and supporting tools for running **Conker**, a confidential container engine based on **Intel TDX**. It includes:
+This repository provides the base image and supporting tools for running a CVM with proper assistant tools that facilitate measurement for instance, such as [**Conker**](https://github.com/iExecBlockchainComputing/conker), a confidential container engine based on **Intel TDX**. It includes:
 
 - A base image for Conker CVMs (Confidential Virtual Machines)
 - Build scripts and configuration files
