@@ -1,5 +1,12 @@
 # Conker CVM Base Image
 
+> ⚠️ **Disclaimer**  
+> This project is in a **prototype/alpha** stage and has **not been audited**.  
+> It is intended for **experimentation only** and **must not be used in production environments**.  
+> Use at your own risk.
+
+## Overview
+
 This repository provides the base image and supporting tools for running **Conker**, a confidential container engine based on **Intel TDX**. It includes:
 
 - A base image for Conker CVMs (Confidential Virtual Machines)
