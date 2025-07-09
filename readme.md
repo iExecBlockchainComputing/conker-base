@@ -15,6 +15,29 @@ This repository provides the base image and supporting tools for running a CVM w
 
 ---
 
+## Table of Contents
+
+- [📁 Repository Structure]([#-repository-structure](#-repository-structure))
+- [🛠 Prerequisites]([#-Prerequisites](#-prerequisites))
+- [🚀 Building](#-building-the-cvm-base-image)
+- [⚙️ Integration]([#-integration](#%EF%B8%8F-integration))
+
+---
+
+## 📁 Repository Structure
+
+> High‑level overview of the top‑level directories. Each folder focuses on one logical part of the **Conker** base image and can be worked on independently.
+
+| Directory | Purpose | Key Components |
+|-----------|---------|----------------|
+| **`apploader/`** | Loads user applications and embeds part of the Remote‑Attestation (RA) service. | • Docker‑based application loader<br>• RA server module<br>• Shared tooling libraries<br>• Sample application |
+| **`cvmassistants/`** | Helpers that run inside the Confidential VM (CVM) to provide secrets, storage, network, and firewall setup. | • **key‑provider**<br>• **secret-provider**<br>• **cvm‑disktool**<br>• **net‑tool**<br>• **firewall** |
+| **`guest-kernel/tdx/`** | Scripts for building the custom **Conker** Linux kernel. | • Kernel config (`.config`)<br>• Compile / packaging scripts |
+| **`base-image/`** | Produces the final Docker base image. | • Image build script<br>• `Dockerfile` describing runtime environment |
+
+
+---
+
 ## 🛠 Prerequisites
 
 Building:
@@ -42,7 +65,7 @@ You may customize the image by modifying the Dockerfile or the files/ directory.
 
 ⸻
 
-⚙️ Integration
+## ⚙️ Integration
 
 This base image is intended to be used as a foundation for building conker as in [the conker repo](https://github.com/iExecBlockchainComputing/xTDX) and running it via QEMU with TDX. 
 
