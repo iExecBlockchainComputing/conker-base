@@ -28,25 +28,24 @@ int app_log_level = -1;
     do {                                            \
         if (app_log_level == 0) {                   \
             TIMEPRINT                               \
-            printf("[Debug]");                      \
+            printf("[DEBUG]");                      \
             printf("[%s:%d] ", __FILE__, __LINE__); \
             printf(__VA_ARGS__);                    \
         }                                           \
     } while (0);
 
-#define LOG_WARING(...)                         \
+#define LOG_WARNING(...)                        \
     do {                                        \
         TIMEPRINT                               \
-        printf("[Waring]");                     \
+        printf("[WARNING]");                    \
         printf("[%s:%d] ", __FILE__, __LINE__); \
         printf(__VA_ARGS__);                    \
-                                                \
     } while (0);
 
 #define LOG_ERROR(...)                          \
     do {                                        \
         TIMEPRINT                               \
-        printf("[Error]");                      \
+        printf("[ERROR]");                      \
         printf("[%s:%d] ", __FILE__, __LINE__); \
         printf(__VA_ARGS__);                    \
     } while (0);
@@ -54,7 +53,7 @@ int app_log_level = -1;
 #define LOG_INFO(...)                           \
     do {                                        \
         TIMEPRINT                               \
-        printf("[Info]");                       \
+        printf("[INFO]");                       \
         printf("[%s:%d] ", __FILE__, __LINE__); \
         printf(__VA_ARGS__);                    \
     } while (0);
@@ -205,10 +204,10 @@ int push_wrapkey_to_secret_box(const char* secret) {
                 break;
             }
             default: {
-                LOG_WARING("the value of %s is not string, not support yet\n", key);
+                LOG_WARNING("the value of %s is not string, not support yet\n", key);
             }
         }
-        LOG_DEBUG("key is %s, value is %s\n", key, value)
+        LOG_DEBUG("key is %s, value is %s\n", key, value);
 
         iter = json_object_iter_next(json_secret, iter);
 
@@ -228,7 +227,7 @@ int push_wrapkey_to_secret_box(const char* secret) {
             strcat(request_buffer, key);
             strcat(request_buffer, "&value=");
             strcat(request_buffer, value);
-            LOG_DEBUG("request body is %s\n", request_buffer)
+            LOG_DEBUG("request body is %s\n", request_buffer);
 
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, request_buffer);
             res = curl_easy_perform(curl);
