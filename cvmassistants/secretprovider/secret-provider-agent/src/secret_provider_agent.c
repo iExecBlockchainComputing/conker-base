@@ -275,7 +275,7 @@ int main(int argc, char** argv) {
         return -1;
     }
     port = atoi(str_port);
-    char* const short_options = "a:v:t:c:ml:DEhfs:";
+    char* const short_options = "a:v:t:c:ml:fs:h";
     struct option long_options[] = {
         {"attester", required_argument, NULL, 'a'},
         {"verifier", required_argument, NULL, 'v'},
@@ -283,8 +283,8 @@ int main(int argc, char** argv) {
         {"crypto", required_argument, NULL, 'c'},
         {"mutual", no_argument, NULL, 'm'},
         {"log-level", required_argument, NULL, 'l'},
-        {"appId", required_argument, NULL, 'f'},
-        {"savePath", no_argument, NULL, 's'},
+        {"appId", no_argument, NULL, 'f'},
+        {"savePath", required_argument, NULL, 's'},
         {"help", no_argument, NULL, 'h'},
         {0, 0, 0, 0}};
 
