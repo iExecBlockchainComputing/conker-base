@@ -238,7 +238,7 @@ int push_wrapkey_to_secret_box(const char* secret) {
 
             curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
             if (http_code != 200) {
-                LOG_ERROR("verify quteo from azure failed, http code is ;%ld\n", http_code);
+                LOG_ERROR("verify quote from azure failed, http code is ;%ld\n", http_code);
                 return -1;
             }
             curl_easy_cleanup(curl);
