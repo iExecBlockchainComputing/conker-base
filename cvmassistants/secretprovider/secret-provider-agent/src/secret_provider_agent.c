@@ -72,6 +72,35 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
                                            char* ip,
                                            int port,
                                            bool appid_flag) {
+
+    bool validation_error = false;
+    if (strlen(attester_type) >= ENCLAVE_ATTESTER_TYPE_NAME_SIZE) {
+        LOG_ERROR("attester_type exceeds maximum allowed size (%d)\n",
+            ENCLAVE_ATTESTER_TYPE_NAME_SIZE - 1);
+        validation_error = true;
+    }
+
+    if (strlen(verifier_type) >= ENCLAVE_VERIFIER_TYPE_NAME_SIZE) {
+        LOG_ERROR("verifier_type exceeds maximum allowed size (%d)\n",
+            ENCLAVE_VERIFIER_TYPE_NAME_SIZE - 1);
+        validation_error = true;
+    }
+
+    if (strlen(tls_type) >= TLS_TYPE_NAME_SIZE) {
+        LOG_ERROR("tls_type exceeds maximum allowed size (%d)\n",
+            TLS_TYPE_NAME_SIZE - 1);
+        validation_error = true;
+    }
+
+    if (strlen(crypto_type) >= CRYPTO_TYPE_NAME_SIZE) {
+        LOG_ERROR("crypto_type exceeds maximum allowed size (%d)\n",
+            CRYPTO_TYPE_NAME_SIZE - 1);
+        validation_error = true;
+    }
+
+    if (validation_error) {
+        return NULL;
+    }
     rats_tls_conf_t conf;
 
     memset(&conf, 0, sizeof(conf));
