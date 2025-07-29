@@ -392,7 +392,7 @@ int main(int argc, char** argv) {
     } else {
         int ret = push_wrapkey_to_secret_box(secret);
         if (ret != 0) {
-            LOG_ERROR("push wrapkey to secret box failed\n")
+            LOG_ERROR("push wrapkey to secret box failed\n");
             code = -1;
         }
     }
