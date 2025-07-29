@@ -118,24 +118,27 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
     /* Get the server IPv4 address from the command line call */
     if (inet_pton(AF_INET, ip, &s_addr.sin_addr) != 1) {
         LOG_ERROR("invalid server address\n");
+        close(sockfd);
         return NULL;
     }
 
     /* Connect to the server */
     if (connect(sockfd, (struct sockaddr*)&s_addr, sizeof(s_addr)) == -1) {
         LOG_ERROR("failed to call connect()\n");
+        close(sockfd);
         return NULL;
     }
     rats_tls_handle handle;
     rats_tls_err_t ret = rats_tls_init(&conf, &handle);
     if (ret != RATS_TLS_ERR_NONE) {
         LOG_ERROR("Failed to initialize rats tls %#x\n", ret);
+        close(sockfd);
         return NULL;
     }
     ret = rats_tls_set_verification_callback(&handle, NULL);
     if (ret != RATS_TLS_ERR_NONE) {
         LOG_ERROR("Failed to set verification callback %#x\n", ret);
-        return NULL;
+        goto err;
     }
     ret = rats_tls_negotiate(handle, sockfd);
     if (ret != RATS_TLS_ERR_NONE) {
@@ -157,10 +160,15 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
     }
     int buff_size = 4096;
     char* buf = malloc(buff_size);
+    if (buf == NULL) {
+        LOG_ERROR("Failed to allocate memory\n");
+        goto err;
+    }
     len = buff_size;
     ret = rats_tls_receive(handle, buf, &len);
     if (ret != RATS_TLS_ERR_NONE) {
         LOG_ERROR("Failed to receive %#x\n", ret);
+        free(buf);
         goto err;
     }
 
@@ -172,12 +180,13 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
     if (ret != RATS_TLS_ERR_NONE)
         LOG_ERROR("Failed to cleanup %#x\n", ret);
 
+    close(sockfd);
     return buf;
 
 err:
-    /* Ignore the error code of cleanup in order to return the prepositional
-     * error */
+    /* Ignore the error code of cleanup in order to return the prepositional error */
     rats_tls_cleanup(handle);
+    close(sockfd);
     return NULL;
 }
 
@@ -370,21 +379,23 @@ int main(int argc, char** argv) {
     LOG_INFO("get secret successful \n");
     LOG_DEBUG("secret is %s\n", secret);
 
+    int code = 0;
     if (secret_save_path != NULL) {
         FILE* file = fopen(secret_save_path, "w");
         if (file == NULL) {
             LOG_ERROR("Failed to open the file %s\n", secret_save_path);
-            return -1;
+            code = -1;
+        } else {
+            fputs(secret, file);
+            fclose(file);
         }
-        fputs(secret, file);
-        fclose(file);
     } else {
         int ret = push_wrapkey_to_secret_box(secret);
         if (ret != 0) {
             LOG_ERROR("push wrapkey to secret box failed\n")
-            return -1;
+            code = -1;
         }
     }
-
-    return 0;
+    free(secret);
+    return code;
 }
