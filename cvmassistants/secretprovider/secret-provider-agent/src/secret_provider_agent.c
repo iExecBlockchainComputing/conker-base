@@ -74,26 +74,26 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
                                            bool appid_flag) {
 
     bool validation_error = false;
-    if (strlen(attester_type) >= ENCLAVE_ATTESTER_TYPE_NAME_SIZE) {
-        LOG_ERROR("attester_type exceeds maximum allowed size (%d)\n",
+    if (attester_type == NULL || strlen(attester_type) >= ENCLAVE_ATTESTER_TYPE_NAME_SIZE) {
+        LOG_ERROR("attester_type is NULL or exceeds maximum allowed size (%d)\n",
             ENCLAVE_ATTESTER_TYPE_NAME_SIZE - 1);
         validation_error = true;
     }
 
-    if (strlen(verifier_type) >= ENCLAVE_VERIFIER_TYPE_NAME_SIZE) {
-        LOG_ERROR("verifier_type exceeds maximum allowed size (%d)\n",
+    if (verifier_type == NULL || strlen(verifier_type) >= ENCLAVE_VERIFIER_TYPE_NAME_SIZE) {
+        LOG_ERROR("verifier_type is NULL or exceeds maximum allowed size (%d)\n",
             ENCLAVE_VERIFIER_TYPE_NAME_SIZE - 1);
         validation_error = true;
     }
 
-    if (strlen(tls_type) >= TLS_TYPE_NAME_SIZE) {
-        LOG_ERROR("tls_type exceeds maximum allowed size (%d)\n",
+    if (tls_type == NULL || strlen(tls_type) >= TLS_TYPE_NAME_SIZE) {
+        LOG_ERROR("tls_type is NULL or exceeds maximum allowed size (%d)\n",
             TLS_TYPE_NAME_SIZE - 1);
         validation_error = true;
     }
 
-    if (strlen(crypto_type) >= CRYPTO_TYPE_NAME_SIZE) {
-        LOG_ERROR("crypto_type exceeds maximum allowed size (%d)\n",
+    if (crypto_type == NULL || strlen(crypto_type) >= CRYPTO_TYPE_NAME_SIZE) {
+        LOG_ERROR("crypto_type is NULL or exceeds maximum allowed size (%d)\n",
             CRYPTO_TYPE_NAME_SIZE - 1);
         validation_error = true;
     }
