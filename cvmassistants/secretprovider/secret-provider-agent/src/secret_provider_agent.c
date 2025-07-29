@@ -72,6 +72,35 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
                                            char* ip,
                                            int port,
                                            bool appid_flag) {
+
+    bool validation_error = false;
+    if (attester_type == NULL || strlen(attester_type) >= ENCLAVE_ATTESTER_TYPE_NAME_SIZE) {
+        LOG_ERROR("attester_type is NULL or exceeds maximum allowed size (%d)\n",
+            ENCLAVE_ATTESTER_TYPE_NAME_SIZE - 1);
+        validation_error = true;
+    }
+
+    if (verifier_type == NULL || strlen(verifier_type) >= ENCLAVE_VERIFIER_TYPE_NAME_SIZE) {
+        LOG_ERROR("verifier_type is NULL or exceeds maximum allowed size (%d)\n",
+            ENCLAVE_VERIFIER_TYPE_NAME_SIZE - 1);
+        validation_error = true;
+    }
+
+    if (tls_type == NULL || strlen(tls_type) >= TLS_TYPE_NAME_SIZE) {
+        LOG_ERROR("tls_type is NULL or exceeds maximum allowed size (%d)\n",
+            TLS_TYPE_NAME_SIZE - 1);
+        validation_error = true;
+    }
+
+    if (crypto_type == NULL || strlen(crypto_type) >= CRYPTO_TYPE_NAME_SIZE) {
+        LOG_ERROR("crypto_type is NULL or exceeds maximum allowed size (%d)\n",
+            CRYPTO_TYPE_NAME_SIZE - 1);
+        validation_error = true;
+    }
+
+    if (validation_error) {
+        return NULL;
+    }
     rats_tls_conf_t conf;
 
     memset(&conf, 0, sizeof(conf));
@@ -93,10 +122,14 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
     }
 
     conf.log_level = log_level;
-    strcpy(conf.attester_type, attester_type);
-    strcpy(conf.verifier_type, verifier_type);
-    strcpy(conf.tls_type, tls_type);
-    strcpy(conf.crypto_type, crypto_type);
+    strncpy(conf.attester_type, attester_type, ENCLAVE_ATTESTER_TYPE_NAME_SIZE - 1);
+    conf.attester_type[ENCLAVE_ATTESTER_TYPE_NAME_SIZE - 1] = '\0';
+    strncpy(conf.verifier_type, verifier_type, ENCLAVE_VERIFIER_TYPE_NAME_SIZE - 1);
+    conf.verifier_type[ENCLAVE_VERIFIER_TYPE_NAME_SIZE - 1] = '\0';
+    strncpy(conf.tls_type, tls_type, TLS_TYPE_NAME_SIZE - 1);
+    conf.tls_type[TLS_TYPE_NAME_SIZE - 1] = '\0';
+    strncpy(conf.crypto_type, crypto_type, CRYPTO_TYPE_NAME_SIZE - 1);
+    conf.crypto_type[CRYPTO_TYPE_NAME_SIZE - 1] = '\0';
     conf.cert_algo = RATS_TLS_CERT_ALGO_DEFAULT;
     if (mutual)
         conf.flags |= RATS_TLS_CONF_FLAGS_MUTUAL;
