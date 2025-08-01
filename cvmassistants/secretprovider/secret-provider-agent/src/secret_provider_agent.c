@@ -24,7 +24,7 @@
             strftime(ts, sizeof(ts), "%Y-%m-%d %H:%M:%S UTC", t); \
             printf("%-29s [%-5s] [%s:%d] " fmt, ts, level, __FILE__, __LINE__, ##__VA_ARGS__); \
         } \
-    } while(0)
+    } while (0)
 
 #define LOG_DEBUG(fmt, ...) \
     LOG_WITH_TIMESTAMP(fmt, "DEBUG", RATS_TLS_LOG_LEVEL_DEBUG, ##__VA_ARGS__)
@@ -32,7 +32,7 @@
 #define LOG_INFO(fmt, ...) \
     LOG_WITH_TIMESTAMP(fmt, "INFO", RATS_TLS_LOG_LEVEL_INFO, ##__VA_ARGS__)
 
-#define LOG_WARNING(fmt, ...) \
+#define LOG_WARN(fmt, ...) \
     LOG_WITH_TIMESTAMP(fmt, "WARN", RATS_TLS_LOG_LEVEL_WARN, ##__VA_ARGS__)
 
 #define LOG_ERROR(fmt, ...) \
@@ -215,7 +215,7 @@ int push_wrapkey_to_secret_box(const char* secret) {
         const char* key = json_object_iter_key(iter);       //
         json_t* json_value = json_object_iter_value(iter);  //
         if (json_value == NULL) {
-            printf("json_object_iter_value fail\n");
+            LOG_WARN("json_object_iter_value fail\n");
             return -1;
         }
         const char* value;
@@ -225,7 +225,7 @@ int push_wrapkey_to_secret_box(const char* secret) {
                 break;
             }
             default: {
-                LOG_WARNING("the value of %s is not string, not support yet\n", key);
+                LOG_WARN("the value of %s is not string, not support yet\n", key);
             }
         }
         LOG_DEBUG("key is %s, value is %s\n", key, value);
