@@ -4,62 +4,41 @@
 #include <jansson.h>
 #include <netinet/in.h>
 #include <rats-tls/api.h>
-#include <rats-tls/log.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 #include <sys/socket.h>
+#include <time.h>
 #include <unistd.h>
-int app_log_level = -1;
-
-#define TIMEPRINT                                                  \
-    do {                                                           \
-        struct timeval now;                                        \
-        struct tm* ptime = NULL;                                   \
-        gettimeofday(&now, NULL);                                  \
-        ptime = gmtime(&now.tv_sec);                               \
-        printf("[%d/%d/%d %02d:%02d:%02d]", 1900 + ptime->tm_year, \
-               1 + ptime->tm_mon, ptime->tm_mday, ptime->tm_hour,  \
-               ptime->tm_min, ptime->tm_sec);                      \
-    } while (0);
-
-#define LOG_DEBUG(...)                              \
-    do {                                            \
-        if (app_log_level == 0) {                   \
-            TIMEPRINT                               \
-            printf("[DEBUG]");                      \
-            printf("[%s:%d] ", __FILE__, __LINE__); \
-            printf(__VA_ARGS__);                    \
-        }                                           \
-    } while (0);
-
-#define LOG_WARNING(...)                        \
-    do {                                        \
-        TIMEPRINT                               \
-        printf("[WARNING]");                    \
-        printf("[%s:%d] ", __FILE__, __LINE__); \
-        printf(__VA_ARGS__);                    \
-    } while (0);
-
-#define LOG_ERROR(...)                          \
-    do {                                        \
-        TIMEPRINT                               \
-        printf("[ERROR]");                      \
-        printf("[%s:%d] ", __FILE__, __LINE__); \
-        printf(__VA_ARGS__);                    \
-    } while (0);
-
-#define LOG_INFO(...)                           \
-    do {                                        \
-        TIMEPRINT                               \
-        printf("[INFO]");                       \
-        printf("[%s:%d] ", __FILE__, __LINE__); \
-        printf(__VA_ARGS__);                    \
-    } while (0);
 
 #define DEFAULT_PORT 1234
 #define DEFAULT_IP "127.0.0.1"
+
+#define LOG_WITH_TIMESTAMP(fmt, level, rats_level, ...) \
+    do { \
+        if (log_level <= rats_level) { \
+            time_t now = time(NULL); \
+            struct tm *t = localtime(&now); \
+            char ts[24]; \
+            strftime(ts, sizeof(ts), "%Y-%m-%d %H:%M:%S UTC", t); \
+            printf("%-29s [%-5s] [%s:%d] " fmt, ts, level, __FILE__, __LINE__, ##__VA_ARGS__); \
+        } \
+    } while(0)
+
+#define LOG_DEBUG(fmt, ...) \
+    LOG_WITH_TIMESTAMP(fmt, "DEBUG", RATS_TLS_LOG_LEVEL_DEBUG, ##__VA_ARGS__)
+
+#define LOG_INFO(fmt, ...) \
+    LOG_WITH_TIMESTAMP(fmt, "INFO", RATS_TLS_LOG_LEVEL_INFO, ##__VA_ARGS__)
+
+#define LOG_WARNING(fmt, ...) \
+    LOG_WITH_TIMESTAMP(fmt, "WARN", RATS_TLS_LOG_LEVEL_WARN, ##__VA_ARGS__)
+
+#define LOG_ERROR(fmt, ...) \
+    LOG_WITH_TIMESTAMP(fmt, "ERROR", RATS_TLS_LOG_LEVEL_ERROR, ##__VA_ARGS__)
+
+rats_tls_log_level_t log_level = RATS_TLS_LOG_LEVEL_INFO;
 
 const char* command_get_secret = "getSecret";
 
@@ -336,7 +315,6 @@ int main(int argc, char** argv) {
     bool mutual = true;
     bool appid_flag = false;
     int opt;
-    rats_tls_log_level_t log_level = RATS_TLS_LOG_LEVEL_INFO;
     do {
         opt = getopt_long(argc, argv, short_options, long_options, NULL);
         switch (opt) {
@@ -398,8 +376,7 @@ int main(int argc, char** argv) {
         }
     } while (opt != -1);
 
-    global_log_level = log_level;
-    app_log_level = log_level;
+    LOG_INFO("Selected log level %d\n", log_level);
 
     secret = get_secret_from_kbs_through_rats_tls(log_level, attester_type, verifier_type,
                                                   tls_type, crypto_type, mutual, srv_ip,
@@ -409,7 +386,7 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    LOG_INFO("get secret successful \n");
+    LOG_INFO("get secret successful\n");
     LOG_DEBUG("secret is %s\n", secret);
 
     int code = 0;
