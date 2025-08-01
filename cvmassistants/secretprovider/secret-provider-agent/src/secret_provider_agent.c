@@ -19,7 +19,7 @@
     do { \
         if (log_level <= rats_level) { \
             time_t now = time(NULL); \
-            struct tm *t = localtime(&now); \
+            struct tm *t = gmtime(&now); \
             char ts[24]; \
             strftime(ts, sizeof(ts), "%Y-%m-%d %H:%M:%S UTC", t); \
             printf("%-29s [%-5s] [%s:%d] " fmt, ts, level, __FILE__, __LINE__, ##__VA_ARGS__); \
