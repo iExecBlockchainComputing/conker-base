@@ -322,7 +322,6 @@ int main(int argc, char** argv) {
                                                   port, appid_flag);
     if (secret == NULL) {
         LOG_ERROR("get secret from kbs failed");
-        fclose(file);
         return -1;
     }
 
