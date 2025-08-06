@@ -1,7 +1,5 @@
 #include <arpa/inet.h>
-#include <curl/curl.h>
 #include <getopt.h>
-#include <jansson.h>
 #include <netinet/in.h>
 #include <rats-tls/api.h>
 #include <stdio.h>
@@ -202,75 +200,6 @@ err:
     return NULL;
 }
 
-int push_wrapkey_to_secret_box(const char* secret) {
-    json_error_t error;
-    json_t* json_secret = json_loads(secret, 0, &error);
-    if (!json_secret) {
-        LOG_ERROR("secret json format error");
-        return -1;
-    }
-
-    void* iter = json_object_iter(json_secret);
-    while (iter != NULL) {
-        const char* key = json_object_iter_key(iter);       //
-        json_t* json_value = json_object_iter_value(iter);  //
-        if (json_value == NULL) {
-            LOG_WARN("json_object_iter_value fail");
-            return -1;
-        }
-        const char* value;
-        switch (json_typeof(json_value)) {
-            case JSON_STRING: {
-                value = json_string_value(json_value);
-                break;
-            }
-            default: {
-                LOG_WARN("the value of %s is not string, not support yet", key);
-            }
-        }
-        LOG_DEBUG("key is %s, value is %s", key, value);
-
-        iter = json_object_iter_next(json_secret, iter);
-
-        CURL* curl;
-        CURLcode res;
-        char request_buffer[1024 * 64] = {0};
-        long http_code = 0;
-        curl = curl_easy_init();
-        if (curl) {
-            // get token
-            curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "POST");
-            curl_easy_setopt(curl, CURLOPT_URL, "http://127.0.0.1:9090/secret");
-            curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-            curl_easy_setopt(curl, CURLOPT_DEFAULT_PROTOCOL, "http");
-
-            strcat(request_buffer, "key=");
-            strcat(request_buffer, key);
-            strcat(request_buffer, "&value=");
-            strcat(request_buffer, value);
-            LOG_DEBUG("request body is %s", request_buffer);
-
-            curl_easy_setopt(curl, CURLOPT_POSTFIELDS, request_buffer);
-            res = curl_easy_perform(curl);
-            if (res != CURLE_OK) {
-                LOG_ERROR("curl_easy_perform() failed: %s", curl_easy_strerror(res));
-                return -1;
-            }
-
-            curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
-            if (http_code != 200) {
-                LOG_ERROR("verify quote from azure failed, http code is ;%ld", http_code);
-                return -1;
-            }
-            curl_easy_cleanup(curl);
-        } else {
-            LOG_ERROR("init curl failed");
-            return -1;
-        }
-    }
-    return 0;
-}
-
 int main(int argc, char** argv) {
     setvbuf(stdout, NULL, _IONBF, 0);
     char* secret = "";
@@ -378,34 +307,30 @@ int main(int argc, char** argv) {
 
     LOG_INFO("Selected log level %d", log_level);
 
+    if (secret_save_path == NULL) {
+        LOG_ERROR("Path to store secret locally is missing");
+        return -1;
+    }
+    FILE* file = fopen(secret_save_path, "w");
+    if (file == NULL) {
+        LOG_ERROR("Failed to open the file %s", secret_save_path);
+        return -1;
+    }
+
     secret = get_secret_from_kbs_through_rats_tls(log_level, attester_type, verifier_type,
                                                   tls_type, crypto_type, mutual, srv_ip,
                                                   port, appid_flag);
-    if (NULL == secret) {
+    if (secret == NULL) {
         LOG_ERROR("get secret from kbs failed");
+        fclose(file);
         return -1;
     }
 
     LOG_INFO("get secret successful");
     LOG_DEBUG("secret is %s", secret);
 
-    int code = 0;
-    if (secret_save_path != NULL) {
-        FILE* file = fopen(secret_save_path, "w");
-        if (file == NULL) {
-            LOG_ERROR("Failed to open the file %s", secret_save_path);
-            code = -1;
-        } else {
-            fputs(secret, file);
-            fclose(file);
-        }
-    } else {
-        int ret = push_wrapkey_to_secret_box(secret);
-        if (ret != 0) {
-            LOG_ERROR("push wrapkey to secret box failed");
-            code = -1;
-        }
-    }
+    fputs(secret, file);
+    fclose(file);
     free(secret);
-    return code;
+    return 0;
 }
