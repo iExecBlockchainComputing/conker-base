@@ -1,4 +1,4 @@
-FROM ubuntu:20.04 as build
+FROM ubuntu:20.04 AS build
 
 RUN sed -i s@/archive.ubuntu.com/@/mirror.ubuntu.ikoula.com/@g /etc/apt/sources.list && \
     sed -i s@/security.ubuntu.com/@/mirror.ubuntu.ikoula.com/@g /etc/apt/sources.list && \
@@ -10,6 +10,7 @@ RUN apt-get update \
        pkg-config \
        unzip \
        build-essential
+
 ARG VERSION=latest
 RUN echo $VERSION > /VERSION
 
@@ -21,7 +22,6 @@ RUN cd /cvm-agent/apploader \
     && PATH=$PATH:/usr/local/go/bin \
        GOPROXY=https://goproxy.cn,direct \
        go build -ldflags "-w -s -X apploader/version.version=${VERSION}" -o apploader
-
 
 RUN cd /cvm-agent/cvmassistants/pkitool \
     && PATH=$PATH:/usr/local/go/bin \
@@ -42,7 +42,6 @@ RUN apt-get install -y \
      libcbor-dev 
 
 #  RA-TLS DCAP libraries:
-
 RUN echo 'deb [arch=amd64] https://download.01.org/intel-sgx/sgx_repo/ubuntu focal main' | tee /etc/apt/sources.list.d/intel-sgx.list > /dev/null \
     && wget -O - https://download.01.org/intel-sgx/sgx_repo/ubuntu/intel-sgx-deb.key | apt-key add -\
     && apt-get update \
@@ -54,7 +53,6 @@ RUN echo 'deb [arch=amd64] https://download.01.org/intel-sgx/sgx_repo/ubuntu foc
        libtdx-attest-dev=1.20.100.2-focal1 \
        libsgx-dcap-default-qpl-dev 
        
-
 RUN mkdir -p $HOME/.cargo/ && echo '[source.crates-io] \n registry = "git://mirrors.ustc.edu.cn/crates.io-index"' >> $HOME/.cargo/config
 
 ## todovm-cal 1005.1
@@ -73,7 +71,6 @@ RUN cd /cvm-agent/cvmassistants/keyprovider/key-provider-agent \
 RUN cd /cvm-agent/cvmassistants/secretprovider/secret-provider-agent \
     && make all
 
-
 # build attest-helper
 RUN git clone https://github.com/guanzhi/GmSSL.git \
     && cd GmSSL \
@@ -83,11 +80,13 @@ RUN git clone https://github.com/guanzhi/GmSSL.git \
     && sed -i "s/qw\/glob/qw\/:glob/g" test/build.info \
     && ./config --prefix=/opt/gmssl \
     && make install
+
 RUN cd /cvm-agent/cvmassistants/attest-helper \
     && PATH=$PATH:/usr/local/go/bin \
     GOPROXY=https://goproxy.cn,direct \
     go build
 
+# Final image
 FROM ubuntu:20.04
 
 RUN sed -i s@/archive.ubuntu.com/@/mirror.ubuntu.ikoula.com/@g /etc/apt/sources.list && \
@@ -121,7 +120,6 @@ COPY --from=build /cvm-agent/apploader/conf  /workplace/apploader/conf/
 
 #get network-tool
 COPY --from=build /cvm-agent/cvmassistants/network-tool/network-config.sh /workplace/cvm-agent/cvmassistants/network-tool/
-
 
 # get pkitool
 COPY --from=build  /cvm-agent/cvmassistants/pkitool/pkitool  /workplace/cvm-agent/cvmassistants/pkitool
@@ -178,7 +176,7 @@ RUN apt-get update \
        curl \
     && pip3 install requests -i https://pypi.tuna.tsinghua.edu.cn/simple
 #todo make supervisord.conf configurable so that it can change the log path
-COPY --from=build /cvm-agent/base-image/k8s/supervisord.conf /etc/supervisor/
+COPY --from=build /cvm-agent/base-image/supervisord/supervisord.conf /etc/supervisor/
 COPY --from=build /cvm-agent/apploader/conf/appload-supervisord.ini /workplace/supervisord/apploader
 
 #get attest-helper
