@@ -2,36 +2,36 @@
 set -o errexit
 set -x
 BASE_NAME=cvm-base
-BASEDIR="$( cd "$( dirname "$0"  )" && pwd  )"
+BASE_DIR="$( cd "$( dirname "$0"  )" && pwd )"
 VERSION=$(git tag -l --points-at HEAD|awk -F'v' '{print $2}')
-buildTime=$(date +%F-%H)
-git_commit=$(git log -n 1 --pretty --format=%h)
 
-if [ -z "$VERSION" ];then
+if [ -z "$VERSION" ] ; then
     VERSION=latest
 fi
-release_desc=${VERSION}-${git_commit}-${buildTime}
 
+git_commit="$(git rev-parse --short=8 HEAD)"
+build_time=$(date +%F-%H-%M-%S)
+release_desc="${VERSION}-${git_commit}-${build_time}"
 
 function build::image() {
     PROXY=$1
-	echo "---> Build Image"
-    cd $BASEDIR/../
-	HOME=`pwd`
-    rm -rf $BASEDIR/../../docker-release
-    cp -a $BASEDIR/../base-image/k8s $BASEDIR/../../docker-release
-    cd $BASEDIR/../../docker-release
-	cp -r /usr/share/zoneinfo .
+    echo "---> Build Image"
+    # create docker-release next to conker-base clone
+    rm -rf $BASE_DIR/../../docker-release
+    mkdir -p $BASE_DIR/../../docker-release/tmp
+    cp -a $BASE_DIR/Dockerfile $BASE_DIR/../../docker-release
+    cp -a $BASE_DIR/supervisord/* $BASE_DIR/../../docker-release
 
-	mkdir tmp
-    cp -a $BASEDIR/../* tmp
-	docker build --no-cache  --build-arg VERSION=$release_desc --build-arg https_proxy=${PROXY} -t $BASE_NAME:${VERSION} -f Dockerfile.base .
-	cd $HOME
+    # move to docker-release
+    cd $BASE_DIR/../../docker-release
+    cp -a /usr/share/zoneinfo .
+    cp -a $BASE_DIR/../* tmp
+
+    docker build --no-cache --build-arg VERSION=$release_desc --build-arg https_proxy=${PROXY} -t $BASE_NAME:${VERSION} .
 }
 
-
 case $1 in
-	buildimage)
-		build::image $2
-	;;
+    buildimage)
+        build::image $2
+    ;;
 esac
