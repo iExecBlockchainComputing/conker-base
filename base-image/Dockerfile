@@ -17,14 +17,13 @@ RUN echo $VERSION > /VERSION
 COPY tmp /cvm-agent
 
 RUN wget --no-proxy --progress=bar:force -c https://dl.google.com/go/go1.24.9.linux-amd64.tar.gz -O - | tar -xz -C /usr/local
+ENV PATH=$PATH:/usr/local/go/bin
 
 RUN cd /cvm-agent/apploader \
-    && PATH=$PATH:/usr/local/go/bin \
-    go build -ldflags "-w -s -X apploader/version.version=${VERSION}" -o apploader
+    && go build -ldflags "-w -s -X apploader/version.version=${VERSION}" -o apploader
 
 RUN cd /cvm-agent/cvmassistants/pkitool \
-    && PATH=$PATH:/usr/local/go/bin \
-    go build -ldflags "-w -s -X apploader/version.version=${VERSION}" -o pkitool
+    && go build -ldflags "-w -s -X apploader/version.version=${VERSION}" -o pkitool
 
 ## build keyprovider
 RUN apt-get install -y \
@@ -80,8 +79,7 @@ RUN git clone https://github.com/guanzhi/GmSSL.git \
     && make install
 
 RUN cd /cvm-agent/cvmassistants/attest-helper \
-    && PATH=$PATH:/usr/local/go/bin \
-    go build
+    && go build
 
 # Final image
 FROM ubuntu:20.04
