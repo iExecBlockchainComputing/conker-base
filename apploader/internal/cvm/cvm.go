@@ -11,7 +11,6 @@ import (
 	"apploader/pkg/conversion"
 	"apploader/pkg/file"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -55,43 +54,6 @@ func DoJob(ca *TaskInfo) error {
 		for k, v := range userEnv {
 			envs = append(envs, fmt.Sprintf("%s=%s", k, v))
 		}
-	}
-
-	if ca.TLSInfo != nil {
-		encryptedDir := "/workplace/encryptedData"
-		log.Printf("[warning] use PKI, please make sure %s is an encrypted disk", encryptedDir)
-		caPath := path.Join(encryptedDir, "pki")
-		if !file.Exists(path.Join(caPath, "existed")) {
-			err := RunCommand("/workplace/csv-agent/csvassistants/pkitool/pkitool", nil, "cert", "-m", "ca", "-a", caPath, "-c", "/workplace/csv-agent/csvassistants/pkitool/conf/cert-conf")
-			if err != nil {
-				return fmt.Errorf("init pki ca failed, error: %s", err.Error())
-			}
-			err = ioutil.WriteFile(path.Join(caPath, "existed"), []byte("existed"), os.ModePerm)
-			if err != nil {
-				os.RemoveAll(caPath)
-				return fmt.Errorf("mark ca existed faield, error: %s", err.Error())
-			}
-		}
-		if !file.Exists(path.Join(ca.TLSInfo.CertPath, "existed")) {
-			err := RunCommand("/workplace/csv-agent/csvassistants/pkitool/pkitool", nil, "cert", "-m", "server", "-a", caPath, "-o", ca.TLSInfo.CertPath, "-n", ca.TLSInfo.CommonName)
-			if err != nil {
-				return fmt.Errorf("create tls cert failed, error: %s\n", err.Error())
-			}
-
-			err = ioutil.WriteFile(path.Join(ca.TLSInfo.CertPath, "existed"), []byte("existed"), os.ModePerm)
-			if err != nil {
-				os.RemoveAll(ca.TLSInfo.CertPath)
-				return fmt.Errorf("mark ca existed faield, error: %s", err.Error())
-			}
-		}
-
-		caString, err := ioutil.ReadFile(path.Join(caPath, "ca.crt"))
-		if err != nil {
-			return fmt.Errorf("read ca.crt failed, error: %s", err.Error())
-		}
-		log.Println("the ca.crt is as follow")
-		fmt.Printf("%s", caString)
-		log.Println("*********************************")
 	}
 
 	log.Printf("entrypoint is %s", ca.Entrypoint)
@@ -160,35 +122,6 @@ func ExecvDockerApp(ca *TaskInfo) {
 		log.Fatalf("task is not a docker app")
 	}
 
-	if ca.TLSInfo != nil {
-		encryptedDir := "/workplace/encryptedData"
-		log.Printf("[warning] use PKI, please make sure %s is an encrypted disk", encryptedDir)
-		caPath := path.Join(encryptedDir, "pki")
-		if !file.Exists(path.Join(caPath, "existed")) {
-			err := RunCommand("/workplace/csv-agent/csvassistants/pkitool/pkitool", nil, "cert", "-m", "ca", "-a", caPath, "-c", "/workplace/csv-agent/csvassistants/pkitool/conf/cert-conf")
-			if err != nil {
-				log.Fatalf("init pki ca failed, error: %s", err.Error())
-			}
-			err = ioutil.WriteFile(path.Join(caPath, "existed"), []byte("existed"), os.ModePerm)
-			if err != nil {
-				os.RemoveAll(caPath)
-				log.Fatalf("mark ca existed faield, error: %s", err.Error())
-			}
-		}
-		if !file.Exists(path.Join(ca.TLSInfo.CertPath, "existed")) {
-			err := RunCommand("/workplace/csv-agent/csvassistants/pkitool/pkitool", nil, "cert", "-m", "server", "-a", caPath, "-o", ca.TLSInfo.CertPath, "-n", ca.TLSInfo.CommonName)
-			if err != nil {
-				log.Fatalf("create tls cert failed, error: %s\n", err.Error())
-			}
-
-			err = ioutil.WriteFile(path.Join(ca.TLSInfo.CertPath, "existed"), []byte("existed"), os.ModePerm)
-			if err != nil {
-				os.RemoveAll(ca.TLSInfo.CertPath)
-				log.Fatalf("mark ca existed faield, error: %s", err.Error())
-			}
-		}
-	}
-
 	for k, v := range secret.Secret {
 		err := os.Setenv(k, v)
 		if err != nil {
@@ -216,42 +149,6 @@ func ExecvDockerApp(ca *TaskInfo) {
 func CreateSevers(ca *TaskInfo) error {
 	if ca.Type != SERVER {
 		return fmt.Errorf("task is not a server")
-	}
-	if ca.TLSInfo != nil {
-		encryptedDir := "/workplace/encryptedData"
-		log.Printf("[warning] use PKI, please make sure %s is an encrypted disk", encryptedDir)
-		caPath := path.Join(encryptedDir, "pki")
-		if !file.Exists(path.Join(caPath, "existed")) {
-			err := RunCommand("/workplace/csv-agent/csvassistants/pkitool/pkitool", nil, "cert", "-m", "ca", "-a", caPath, "-c", "/workplace/csv-agent/csvassistants/pkitool/conf/cert-conf")
-			if err != nil {
-				return fmt.Errorf("init pki ca failed, error: %s", err.Error())
-			}
-			err = ioutil.WriteFile(path.Join(caPath, "existed"), []byte("existed"), os.ModePerm)
-			if err != nil {
-				os.RemoveAll(caPath)
-				return fmt.Errorf("mark ca existed faield, error: %s", err.Error())
-			}
-		}
-		if !file.Exists(path.Join(ca.TLSInfo.CertPath, "existed")) {
-			err := RunCommand("/workplace/csv-agent/csvassistants/pkitool/pkitool", nil, "cert", "-m", "server", "-a", caPath, "-o", ca.TLSInfo.CertPath, "-n", ca.TLSInfo.CommonName)
-			if err != nil {
-				return fmt.Errorf("create tls cert failed, error: %s\n", err.Error())
-			}
-
-			err = ioutil.WriteFile(path.Join(ca.TLSInfo.CertPath, "existed"), []byte("existed"), os.ModePerm)
-			if err != nil {
-				os.RemoveAll(ca.TLSInfo.CertPath)
-				return fmt.Errorf("mark ca existed faield, error: %s", err.Error())
-			}
-		}
-
-		caString, err := ioutil.ReadFile(path.Join(caPath, "ca.crt"))
-		if err != nil {
-			return fmt.Errorf("read ca.crt failed, error: %s", err.Error())
-		}
-		log.Println("the ca.crt is as follow")
-		fmt.Printf("%s", caString)
-		log.Println("*********************************")
 	}
 
 	envs := make([]string, 0)
@@ -303,11 +200,11 @@ func CreateSevers(ca *TaskInfo) error {
 }
 
 func Start() {
-	appfile, err := ioutil.ReadFile("conf/app.yml")
+	appfile, err := os.ReadFile("conf/app.yml")
 	if err != nil {
 		log.Fatalf("read app.yml failed, error: %s\n", err.Error())
 	}
-	csvApp := new(CsvApp)
+	csvApp := new(CvmApp)
 	err = yaml.Unmarshal(appfile, &csvApp)
 	if err != nil {
 		log.Fatalf("unmarshal app.yml failed, error: %s\n", err.Error())

@@ -1,13 +1,14 @@
 package cvm
 
-type CsvApp struct {
+// CvmApp is the main application configuration
+type CvmApp struct {
 	Kind          string      `yaml:"kind"`
 	AppInfo       []*TaskInfo `yaml:"app"`
 	CsvAssistants []*TaskInfo `yaml:"csvAssistants"`
 }
 
+// TaskInfo is the information of a task
 type TaskInfo struct {
-	TLSInfo    *TLSInfo    `yaml:"tls"`
 	Name       string      `yaml:"name"`
 	Type       string      `yaml:"type"`
 	Entrypoint string      `yaml:"entrypoint"`
@@ -16,15 +17,11 @@ type TaskInfo struct {
 	Args       []string    `yaml:"args"`
 }
 
+// SupervisorConf is the configuration of a supervisor
 type SupervisorConf struct {
 	Name        string
 	Command     string
 	Workplace   string
 	Environment string
 	Priority    int
-}
-
-type TLSInfo struct {
-	CertPath   string `yaml:"certPath"`
-	CommonName string `yaml:"commonName"`
 }
