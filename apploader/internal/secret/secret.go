@@ -1,4 +1,4 @@
-package secret_server
+package secret
 
 import (
 	"log"
@@ -29,17 +29,6 @@ func StartSecretServer() {
 		})
 	})
 
-	//r.GET("/secret", func(c *gin.Context) {
-	//	k := c.PostForm("key")
-	//
-	//	v := Secret[k]
-	//	fmt.Println(v)
-	//	c.JSON(http.StatusOK, gin.H{
-	//		"code": 200,
-	//		"message": "update secret successful",
-	//		"value":v,
-	//	})
-	//})
 	log.Printf("secret server start successful")
 	r.Run(":9090") // listen and serve on 0.0.0.0:8080
 }
