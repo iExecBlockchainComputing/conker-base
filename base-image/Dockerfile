@@ -20,12 +20,10 @@ RUN wget --no-proxy --progress=bar:force -c https://dl.google.com/go/go1.24.9.li
 
 RUN cd /cvm-agent/apploader \
     && PATH=$PATH:/usr/local/go/bin \
-    GOPROXY=https://goproxy.cn,direct \
     go build -ldflags "-w -s -X apploader/version.version=${VERSION}" -o apploader
 
 RUN cd /cvm-agent/cvmassistants/pkitool \
     && PATH=$PATH:/usr/local/go/bin \
-    GOPROXY=https://goproxy.cn,direct \
     go build -ldflags "-w -s -X apploader/version.version=${VERSION}" -o pkitool
 
 ## build keyprovider
@@ -83,7 +81,6 @@ RUN git clone https://github.com/guanzhi/GmSSL.git \
 
 RUN cd /cvm-agent/cvmassistants/attest-helper \
     && PATH=$PATH:/usr/local/go/bin \
-    GOPROXY=https://goproxy.cn,direct \
     go build
 
 # Final image
