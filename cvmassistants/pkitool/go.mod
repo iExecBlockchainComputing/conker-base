@@ -1,6 +1,6 @@
 module pkitool
 
-go 1.19
+go 1.24
 
 require (
 	github.com/beego/beego/v2 v2.1.4
