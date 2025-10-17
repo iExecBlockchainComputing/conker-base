@@ -7,16 +7,15 @@ package csvapp
 */
 import "C"
 import (
+	"apploader/pkg/conversion"
+	"apploader/pkg/file"
 	"apploader/secret_server"
-	"apploader/util/file"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"path"
-	"strconv"
 	"strings"
 	"syscall"
 	"text/template"
@@ -297,7 +296,7 @@ func CreateSevers(ca *TaskInfo) error {
 			return fmt.Errorf("user env format error")
 		}
 		for k, v := range userEnv {
-			value := Interface2string(v)
+			value := conversion.Interface2String(v)
 			envs = append(envs, fmt.Sprintf("%s=%s", k, value))
 		}
 	}
@@ -385,59 +384,4 @@ func startTask(tasks []*TaskInfo) {
 			log.Fatalf("task type: %s does not support", t.Type)
 		}
 	}
-}
-
-func Interface2string(value interface{}) string {
-	var key string
-	if value == nil {
-		return key
-	}
-
-	switch value.(type) {
-	case float64:
-		ft := value.(float64)
-		key = strconv.FormatFloat(ft, 'f', -1, 64)
-	case float32:
-		ft := value.(float32)
-		key = strconv.FormatFloat(float64(ft), 'f', -1, 64)
-	case int:
-		it := value.(int)
-		key = strconv.Itoa(it)
-	case uint:
-		it := value.(uint)
-		key = strconv.Itoa(int(it))
-	case int8:
-		it := value.(int8)
-		key = strconv.Itoa(int(it))
-	case uint8:
-		it := value.(uint8)
-		key = strconv.Itoa(int(it))
-	case int16:
-		it := value.(int16)
-		key = strconv.Itoa(int(it))
-	case uint16:
-		it := value.(uint16)
-		key = strconv.Itoa(int(it))
-	case int32:
-		it := value.(int32)
-		key = strconv.Itoa(int(it))
-	case uint32:
-		it := value.(uint32)
-		key = strconv.Itoa(int(it))
-	case int64:
-		it := value.(int64)
-		key = strconv.FormatInt(it, 10)
-	case uint64:
-		it := value.(uint64)
-		key = strconv.FormatUint(it, 10)
-	case string:
-		key = value.(string)
-	case []byte:
-		key = string(value.([]byte))
-	default:
-		newValue, _ := json.Marshal(value)
-		key = string(newValue)
-	}
-
-	return key
 }
