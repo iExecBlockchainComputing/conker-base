@@ -4,7 +4,7 @@ package cvm
 type CvmApp struct {
 	Kind          string      `yaml:"kind"`
 	AppInfo       []*TaskInfo `yaml:"app"`
-	CsvAssistants []*TaskInfo `yaml:"csvAssistants"`
+	CvmAssistants []*TaskInfo `yaml:"csvAssistants"`
 }
 
 // TaskInfo is the information of a task

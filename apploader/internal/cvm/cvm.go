@@ -204,8 +204,8 @@ func Start() {
 	if err != nil {
 		log.Fatalf("read app.yml failed, error: %s\n", err.Error())
 	}
-	csvApp := new(CvmApp)
-	err = yaml.Unmarshal(appfile, &csvApp)
+	cvmApp := new(CvmApp)
+	err = yaml.Unmarshal(appfile, &cvmApp)
 	if err != nil {
 		log.Fatalf("unmarshal app.yml failed, error: %s\n", err.Error())
 	}
@@ -213,9 +213,9 @@ func Start() {
 
 	log.Println("do all the job over")
 
-	startTask(csvApp.CsvAssistants)
+	startTask(cvmApp.CvmAssistants)
 
-	startTask(csvApp.AppInfo)
+	startTask(cvmApp.AppInfo)
 }
 
 func startTask(tasks []*TaskInfo) {
