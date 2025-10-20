@@ -21,47 +21,47 @@ const (
 	SERVER = "server"
 )
 
-type CvmService interface {
+type CvmBootManager interface {
 	Start()
 }
 
-type cvmService struct {
-	config *config.CvmConfig
-	cvmApp *CvmApp
+type cvmBootManager struct {
+	config          *config.CvmConfig
+	cvmBootSequence *CvmBootSequence
 }
 
-// NewCvmService creates a new cvm service
-func NewCvmService(config *config.CvmConfig) (CvmService, error) {
-	service := &cvmService{config: config}
-	cvmApp, err := service.loadConfig()
+// NewCvmBootManager creates a new cvm service
+func NewCvmBootManager(config *config.CvmConfig) (CvmBootManager, error) {
+	service := &cvmBootManager{config: config}
+	cvmBootSequence, err := service.loadConfig()
 	if err != nil {
 		return nil, err
 	}
-	service.cvmApp = cvmApp
+	service.cvmBootSequence = cvmBootSequence
 	return service, nil
 }
 
 // Start starts the cvm service
-func (s *cvmService) Start() {
-	s.startTask(s.cvmApp.CvmAssistants)
-	s.startTask(s.cvmApp.AppInfo)
+func (s *cvmBootManager) Start() {
+	s.startTask(s.cvmBootSequence.CvmAssistants)
+	s.startTask(s.cvmBootSequence.AppInfo)
 }
 
 // loadConfig loads the cvm app config
-func (s *cvmService) loadConfig() (*CvmApp, error) {
-	appfile, err := os.ReadFile(s.config.ConfigPath)
+func (cbm *cvmBootManager) loadConfig() (*CvmBootSequence, error) {
+	appfile, err := os.ReadFile(cbm.config.ConfigPath)
 	if err != nil {
-		return nil, fmt.Errorf("read %s failed, error: %s", s.config.ConfigPath, err.Error())
+		return nil, fmt.Errorf("read %s failed, error: %s", cbm.config.ConfigPath, err.Error())
 	}
-	cvmApp := new(CvmApp)
-	err = yaml.Unmarshal(appfile, &cvmApp)
+	cvmBootSequence := new(CvmBootSequence)
+	err = yaml.Unmarshal(appfile, &cvmBootSequence)
 	if err != nil {
-		return nil, fmt.Errorf("unmarshal %s failed, error: %s", s.config.ConfigPath, err.Error())
+		return nil, fmt.Errorf("unmarshal %s failed, error: %s", cbm.config.ConfigPath, err.Error())
 	}
-	return cvmApp, nil
+	return cvmBootSequence, nil
 }
 
-func (s *cvmService) DoJob(taskInfo *TaskInfo) error {
+func (cbm *cvmBootManager) DoJob(taskInfo *TaskInfo) error {
 	if taskInfo.Type != JOB {
 		return fmt.Errorf("this task is not a job")
 	}
@@ -87,7 +87,7 @@ func (s *cvmService) DoJob(taskInfo *TaskInfo) error {
 
 }
 
-func (s *cvmService) CreateSevers(taskInfo *TaskInfo) error {
+func (cbm *cvmBootManager) CreateSevers(taskInfo *TaskInfo) error {
 	if taskInfo.Type != SERVER {
 		return fmt.Errorf("task is not a server")
 	}
@@ -117,12 +117,12 @@ func (s *cvmService) CreateSevers(taskInfo *TaskInfo) error {
 	sConf.Environment = strings.Join(envs, ",")
 	sConf.Priority = taskInfo.Priority
 
-	tmpl, err := template.ParseFiles(s.config.SupervisorTemplatePath)
+	tmpl, err := template.ParseFiles(cbm.config.SupervisorTemplatePath)
 	if err != nil {
-		return fmt.Errorf("parse %s failed, error: %s", s.config.SupervisorTemplatePath, err.Error())
+		return fmt.Errorf("parse %s failed, error: %s", cbm.config.SupervisorTemplatePath, err.Error())
 	}
 
-	supervisordINIPath := path.Join(s.config.SupervisorPath, fmt.Sprintf("%s.ini", taskInfo.Name))
+	supervisordINIPath := path.Join(cbm.config.SupervisorPath, fmt.Sprintf("%s.ini", taskInfo.Name))
 	if file.IsFile(supervisordINIPath) {
 		os.RemoveAll(supervisordINIPath)
 	}
@@ -140,12 +140,12 @@ func (s *cvmService) CreateSevers(taskInfo *TaskInfo) error {
 	return nil
 }
 
-func (s *cvmService) startTask(tasks []*TaskInfo) {
+func (cbm *cvmBootManager) startTask(tasks []*TaskInfo) {
 	for i, t := range tasks {
 		switch t.Type {
 		case JOB:
 			log.Printf("begin to do job %s\n", t.Name)
-			err := s.DoJob(t)
+			err := cbm.DoJob(t)
 			if err != nil {
 				log.Fatalf("do job %s failed, error: %s\n", t.Name, err.Error())
 			}
@@ -153,7 +153,7 @@ func (s *cvmService) startTask(tasks []*TaskInfo) {
 		case SERVER:
 			log.Printf("begin to deploy server %s\n", t.Name)
 			t.Priority = i + 2
-			err := s.CreateSevers(t)
+			err := cbm.CreateSevers(t)
 			if err != nil {
 				log.Fatalf("deploy server %s failed, error: %s\n", t.Name, err)
 			}
