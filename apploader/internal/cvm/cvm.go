@@ -43,8 +43,8 @@ func NewCvmBootManager(config *config.CvmConfig) (CvmBootManager, error) {
 
 // Start starts the cvm service
 func (s *cvmBootManager) Start() {
-	s.startTask(s.cvmBootSequence.CvmAssistants)
-	s.startTask(s.cvmBootSequence.AppInfo)
+	s.processTasks(s.cvmBootSequence.CvmAssistants)
+	s.processTasks(s.cvmBootSequence.AppInfo)
 }
 
 // loadConfig loads the cvm app config
@@ -65,7 +65,7 @@ func (cbm *cvmBootManager) loadConfig() (*CvmBootSequence, error) {
 	return cvmBootSequence, nil
 }
 
-func (cbm *cvmBootManager) DoJob(taskInfo *TaskInfo) error {
+func (cbm *cvmBootManager) ExecuteTask(taskInfo *TaskInfo) error {
 	if taskInfo.Type != JOB {
 		return fmt.Errorf("this task is not a job")
 	}
@@ -91,7 +91,7 @@ func (cbm *cvmBootManager) DoJob(taskInfo *TaskInfo) error {
 
 }
 
-func (cbm *cvmBootManager) CreateSevers(taskInfo *TaskInfo) error {
+func (cbm *cvmBootManager) DeployService(taskInfo *TaskInfo) error {
 	if taskInfo.Type != SERVER {
 		return fmt.Errorf("task is not a server")
 	}
@@ -144,12 +144,12 @@ func (cbm *cvmBootManager) CreateSevers(taskInfo *TaskInfo) error {
 	return nil
 }
 
-func (cbm *cvmBootManager) startTask(tasks []*TaskInfo) {
+func (cbm *cvmBootManager) processTasks(tasks []*TaskInfo) {
 	for i, t := range tasks {
 		switch t.Type {
 		case JOB:
 			log.Printf("begin to do job %s\n", t.Name)
-			err := cbm.DoJob(t)
+			err := cbm.ExecuteTask(t)
 			if err != nil {
 				log.Fatalf("do job %s failed, error: %s\n", t.Name, err.Error())
 			}
@@ -157,7 +157,7 @@ func (cbm *cvmBootManager) startTask(tasks []*TaskInfo) {
 		case SERVER:
 			log.Printf("begin to deploy server %s\n", t.Name)
 			t.Priority = i + 2
-			err := cbm.CreateSevers(t)
+			err := cbm.DeployService(t)
 			if err != nil {
 				log.Fatalf("deploy server %s failed, error: %s\n", t.Name, err)
 			}
