@@ -13,7 +13,7 @@ func RunCommand(name string, envs []string, arg ...string) error {
 	cmd := exec.Command(name, arg...)
 
 	cmd.Dir = path.Dir(name)
-	//
+
 	stdout, err := cmd.StdoutPipe()
 	cmd.Stderr = cmd.Stdout
 	cmd.Env = envs
@@ -23,7 +23,6 @@ func RunCommand(name string, envs []string, arg ...string) error {
 	if err = cmd.Start(); err != nil {
 		return err
 	}
-	//
 	for {
 		tmp := make([]byte, 128)
 		_, err := stdout.Read(tmp)
