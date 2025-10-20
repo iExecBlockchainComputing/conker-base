@@ -168,22 +168,43 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
         LOG_ERROR("Failed to transmit %#x", ret);
         goto err;
     }
-    int buff_size = 4096;
+    
+    // Receive the length of the upcoming session file in a single call, as NUL-terminated decimal string
+    char session_len_str[32];
+    size_t session_len_str_size = sizeof(session_len_str);
+    ret = rats_tls_receive(handle, session_len_str, &session_len_str_size);
+    if (ret != RATS_TLS_ERR_NONE || session_len_str_size == 0) {
+        LOG_ERROR("Failed to receive session length header %#x", ret);
+        goto err;
+    }
+    if (session_len_str_size >= sizeof(session_len_str)) {
+        LOG_ERROR("Session length header too large (%zu >= %zu)", session_len_str_size, sizeof(session_len_str));
+        goto err;
+    }
+    session_len_str[sizeof(session_len_str) - 1] = '\0';
+    size_t session_len = strtoull(session_len_str, NULL, 10);
+    LOG_DEBUG("Parsed session length: %zu", session_len);
+
+    
+    int buff_size = (int)session_len + 1; // +1 for null terminator
     char* buf = malloc(buff_size);
     if (buf == NULL) {
         LOG_ERROR("Failed to allocate memory");
         goto err;
     }
-    len = buff_size;
+    len = session_len;
     ret = rats_tls_receive(handle, buf, &len);
     if (ret != RATS_TLS_ERR_NONE) {
         LOG_ERROR("Failed to receive %#x", ret);
         free(buf);
         goto err;
     }
+    if (len != session_len) {
+        LOG_ERROR("Unexpected session size. Expected %zu, got %zu", session_len, len);
+        free(buf);
+        goto err;
+    }
 
-    if (len >= buff_size)
-        len = buff_size - 1;
     buf[len] = '\0';
 
     ret = rats_tls_cleanup(handle);
