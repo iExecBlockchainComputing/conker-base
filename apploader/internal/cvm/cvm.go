@@ -65,7 +65,7 @@ func (cbm *cvmBootManager) loadConfig() (*CvmBootSequence, error) {
 	return cvmBootSequence, nil
 }
 
-func (cbm *cvmBootManager) ExecuteTask(taskInfo *TaskInfo) error {
+func (cbm *cvmBootManager) executeTask(taskInfo *TaskInfo) error {
 	if taskInfo.Type != JOB {
 		return fmt.Errorf("this task is not a job")
 	}
@@ -91,7 +91,7 @@ func (cbm *cvmBootManager) ExecuteTask(taskInfo *TaskInfo) error {
 
 }
 
-func (cbm *cvmBootManager) DeployService(taskInfo *TaskInfo) error {
+func (cbm *cvmBootManager) deployService(taskInfo *TaskInfo) error {
 	if taskInfo.Type != SERVER {
 		return fmt.Errorf("task is not a server")
 	}
@@ -149,7 +149,7 @@ func (cbm *cvmBootManager) processTasks(tasks []*TaskInfo) {
 		switch t.Type {
 		case JOB:
 			log.Printf("begin to do job %s\n", t.Name)
-			err := cbm.ExecuteTask(t)
+			err := cbm.executeTask(t)
 			if err != nil {
 				log.Fatalf("do job %s failed, error: %s\n", t.Name, err.Error())
 			}
@@ -157,7 +157,7 @@ func (cbm *cvmBootManager) processTasks(tasks []*TaskInfo) {
 		case SERVER:
 			log.Printf("begin to deploy server %s\n", t.Name)
 			t.Priority = i + 2
-			err := cbm.DeployService(t)
+			err := cbm.deployService(t)
 			if err != nil {
 				log.Fatalf("deploy server %s failed, error: %s\n", t.Name, err)
 			}
