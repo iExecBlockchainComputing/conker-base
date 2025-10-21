@@ -12,6 +12,7 @@
 
 #define DEFAULT_PORT 1234
 #define DEFAULT_IP "127.0.0.1"
+#define CHUNK_SIZE 4096
 
 #define LOG_WITH_TIMESTAMP(fmt, level, rats_level, ...) \
     do { \
@@ -192,20 +193,28 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
         LOG_ERROR("Failed to allocate memory");
         goto err;
     }
-    len = session_len;
-    ret = rats_tls_receive(handle, buf, &len);
-    if (ret != RATS_TLS_ERR_NONE) {
-        LOG_ERROR("Failed to receive %#x", ret);
-        free(buf);
-        goto err;
+    
+    // Receive session data in chunks
+    size_t bytes_received = 0;
+    while (bytes_received < session_len) {
+        size_t chunk_size = (session_len - bytes_received > CHUNK_SIZE) ? CHUNK_SIZE : (session_len - bytes_received);
+        len = chunk_size;
+        ret = rats_tls_receive(handle, buf + bytes_received, &len);
+        if (ret != RATS_TLS_ERR_NONE) {
+            LOG_ERROR("Failed to receive chunk %#x", ret);
+            free(buf);
+            goto err;
+        }
+        bytes_received += len;
+        LOG_DEBUG("Received chunk (%zu bytes), total received: %zu/%zu", len, bytes_received, session_len);
     }
-    if (len != session_len) {
-        LOG_ERROR("Unexpected session size. Expected %zu, got %zu", session_len, len);
+    if (bytes_received != session_len) {
+        LOG_ERROR("Unexpected session size. Expected %zu, got %zu", session_len, bytes_received);
         free(buf);
         goto err;
     }
 
-    buf[len] = '\0';
+    buf[bytes_received] = '\0';
 
     ret = rats_tls_cleanup(handle);
     if (ret != RATS_TLS_ERR_NONE)
