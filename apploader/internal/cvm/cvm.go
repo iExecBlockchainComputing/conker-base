@@ -43,8 +43,8 @@ func NewCvmBootManager(config *config.CvmConfig) (CvmBootManager, error) {
 
 // Start starts the cvm service
 func (s *cvmBootManager) Start() {
-	s.startTask(s.cvmBootSequence.CvmAssistants)
-	s.startTask(s.cvmBootSequence.AppInfo)
+	s.processTasks(s.cvmBootSequence.CvmAssistants)
+	s.processTasks(s.cvmBootSequence.AppInfo)
 }
 
 // loadConfig loads the cvm app config
@@ -58,10 +58,14 @@ func (cbm *cvmBootManager) loadConfig() (*CvmBootSequence, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unmarshal %s failed, error: %s", cbm.config.ConfigPath, err.Error())
 	}
+	// validate cvmBootSequence, we want no more than one app
+	if len(cvmBootSequence.AppInfo) >= 1 {
+		return nil, fmt.Errorf("only one application is supported, but got %d", len(cvmBootSequence.AppInfo))
+	}
 	return cvmBootSequence, nil
 }
 
-func (cbm *cvmBootManager) DoJob(taskInfo *TaskInfo) error {
+func (cbm *cvmBootManager) executeTask(taskInfo *TaskInfo) error {
 	if taskInfo.Type != JOB {
 		return fmt.Errorf("this task is not a job")
 	}
@@ -87,7 +91,7 @@ func (cbm *cvmBootManager) DoJob(taskInfo *TaskInfo) error {
 
 }
 
-func (cbm *cvmBootManager) CreateSevers(taskInfo *TaskInfo) error {
+func (cbm *cvmBootManager) deployService(taskInfo *TaskInfo) error {
 	if taskInfo.Type != SERVER {
 		return fmt.Errorf("task is not a server")
 	}
@@ -140,12 +144,12 @@ func (cbm *cvmBootManager) CreateSevers(taskInfo *TaskInfo) error {
 	return nil
 }
 
-func (cbm *cvmBootManager) startTask(tasks []*TaskInfo) {
+func (cbm *cvmBootManager) processTasks(tasks []*TaskInfo) {
 	for i, t := range tasks {
 		switch t.Type {
 		case JOB:
 			log.Printf("begin to do job %s\n", t.Name)
-			err := cbm.DoJob(t)
+			err := cbm.executeTask(t)
 			if err != nil {
 				log.Fatalf("do job %s failed, error: %s\n", t.Name, err.Error())
 			}
@@ -153,7 +157,7 @@ func (cbm *cvmBootManager) startTask(tasks []*TaskInfo) {
 		case SERVER:
 			log.Printf("begin to deploy server %s\n", t.Name)
 			t.Priority = i + 2
-			err := cbm.CreateSevers(t)
+			err := cbm.deployService(t)
 			if err != nil {
 				log.Fatalf("deploy server %s failed, error: %s\n", t.Name, err)
 			}
