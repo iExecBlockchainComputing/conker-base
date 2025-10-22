@@ -28,11 +28,12 @@ type CvmBootManager interface {
 type cvmBootManager struct {
 	config          *config.CvmConfig
 	cvmBootSequence *CvmBootSequence
+	secretService   secret.SecretService
 }
 
 // NewCvmBootManager creates a new cvm service
-func NewCvmBootManager(config *config.CvmConfig) (CvmBootManager, error) {
-	service := &cvmBootManager{config: config}
+func NewCvmBootManager(config *config.CvmConfig, secretService secret.SecretService) (CvmBootManager, error) {
+	service := &cvmBootManager{config: config, secretService: secretService}
 	cvmBootSequence, err := service.loadConfig()
 	if err != nil {
 		return nil, err
@@ -71,7 +72,7 @@ func (cbm *cvmBootManager) executeTask(taskInfo *TaskInfo) error {
 	}
 
 	envs := make([]string, 0)
-	for k, v := range secret.Secret {
+	for k, v := range cbm.secretService.GetAllSecrets() {
 		envs = append(envs, fmt.Sprintf("%s=%s", k, v))
 	}
 
