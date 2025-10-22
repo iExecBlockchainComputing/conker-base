@@ -159,23 +159,17 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
         goto err;
     }
     
-    // Receive the length of the upcoming session file in a single call, as non NUL-terminated decimal string
-    char session_len_str[32];
-    size_t session_len_str_size = sizeof(session_len_str);
-    LOG_DEBUG("Maximum string-encoded size of session length: %zu bytes", session_len_str_size);
-    ret = rats_tls_receive(handle, session_len_str, &session_len_str_size);
-    if (ret != RATS_TLS_ERR_NONE || session_len_str_size == 0) {
-        LOG_ERROR("Failed to receive session length header %#x", ret);
+    // Receive the length of the upcoming session file as uint32_t in network byte order
+    uint32_t session_len_net;
+    size_t session_len_size = sizeof(uint32_t);
+    LOG_DEBUG("Receiving session length as uint32_t: %zu bytes", session_len_size);
+    ret = rats_tls_receive(handle, &session_len_net, &session_len_size);
+    if (ret != RATS_TLS_ERR_NONE || session_len_size != sizeof(uint32_t)) {
+        LOG_ERROR("Failed to receive session length header %#x (received %zu bytes, expected %zu)", ret, session_len_size, sizeof(uint32_t));
         goto err;
     }
-    if (session_len_str_size >= sizeof(session_len_str)) {
-        LOG_ERROR("Session length header too large (%zu >= %zu)", session_len_str_size, sizeof(session_len_str));
-        goto err;
-    }
-    LOG_DEBUG("Received string-encoded size of session length: %zu bytes", session_len_str_size);
-    session_len_str[session_len_str_size] = '\0';
-    size_t session_len = strtoull(session_len_str, NULL, 10);
-    LOG_DEBUG("Parsed session length: %zu", session_len);
+    size_t session_len = (size_t)ntohl(session_len_net); // from network byte order to host byte order
+    LOG_DEBUG("Received session length: %zu", session_len);
     if (session_len > MAX_SESSION_SIZE) {
         LOG_ERROR("Session length exceeds maximum allowed size (%zu > %zu)", session_len, (size_t) MAX_SESSION_SIZE);
         goto err;
