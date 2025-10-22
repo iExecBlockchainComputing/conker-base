@@ -157,9 +157,10 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
         goto err;
     }
     
-    // Receive the length of the upcoming session file in a single call, as NUL-terminated decimal string
+    // Receive the length of the upcoming session file in a single call, as non NUL-terminated decimal string
     char session_len_str[32];
     size_t session_len_str_size = sizeof(session_len_str);
+    LOG_DEBUG("Maximum string-encoded size of session length: %zu bytes", session_len_str_size);
     ret = rats_tls_receive(handle, session_len_str, &session_len_str_size);
     if (ret != RATS_TLS_ERR_NONE || session_len_str_size == 0) {
         LOG_ERROR("Failed to receive session length header %#x", ret);
@@ -169,7 +170,8 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
         LOG_ERROR("Session length header too large (%zu >= %zu)", session_len_str_size, sizeof(session_len_str));
         goto err;
     }
-    session_len_str[sizeof(session_len_str) - 1] = '\0';
+    LOG_DEBUG("Received string-encoded size of session length: %zu bytes", session_len_str_size);
+    session_len_str[session_len_str_size] = '\0';
     size_t session_len = strtoull(session_len_str, NULL, 10);
     LOG_DEBUG("Parsed session length: %zu", session_len);
 
