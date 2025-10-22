@@ -165,7 +165,7 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
     LOG_DEBUG("Receiving session length as uint32_t: %zu bytes", session_len_size);
     ret = rats_tls_receive(handle, &session_len_net, &session_len_size);
     if (ret != RATS_TLS_ERR_NONE || session_len_size != sizeof(uint32_t)) {
-        LOG_ERROR("Failed to receive session length header %#x (received %zu bytes, expected %zu)", ret, session_len_size, sizeof(uint32_t));
+        LOG_ERROR("Failed to receive session length %#x (received %zu bytes, expected %zu)", ret, session_len_size, sizeof(uint32_t));
         goto err;
     }
     size_t session_len = (size_t)ntohl(session_len_net); // from network byte order to host byte order
@@ -179,7 +179,7 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
     int buff_size = (int)session_len + 1; // +1 for null terminator
     char* buf = malloc(buff_size);
     if (buf == NULL) {
-        LOG_ERROR("Failed to allocate memory");
+        LOG_ERROR("Failed to allocate memory for session file");
         goto err;
     }
     
