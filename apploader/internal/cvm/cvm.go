@@ -87,7 +87,6 @@ func (cbm *cvmBootManager) executeTask(taskInfo *TaskInfo) error {
 		}
 	}
 
-	log.Printf("entrypoint is %s", taskInfo.Entrypoint)
 	return command.RunCommand(taskInfo.Entrypoint, envs, taskInfo.Args...)
 
 }
@@ -149,30 +148,33 @@ func (cbm *cvmBootManager) processTasks(tasks []*TaskInfo) {
 	for i, t := range tasks {
 		switch t.Type {
 		case JOB:
-			log.Printf("begin to do job %s\n", t.Name)
+			log.Printf("Executing job: %s (entrypoint: %s)", t.Name, t.Entrypoint)
 			err := cbm.executeTask(t)
 			if err != nil {
-				log.Fatalf("do job %s failed, error: %s\n", t.Name, err.Error())
+				log.Fatalf("Failed to execute job %s: %v", t.Name, err)
 			}
-			log.Printf("end to do job %s\n", t.Name)
+			log.Printf("Job completed: %s", t.Name)
 		case SERVER:
-			log.Printf("begin to deploy server %s\n", t.Name)
+			log.Printf("Deploying service: %s (entrypoint: %s)", t.Name, t.Entrypoint)
 			t.Priority = i + 2
 			err := cbm.deployService(t)
 			if err != nil {
-				log.Fatalf("deploy server %s failed, error: %s\n", t.Name, err)
+				log.Fatalf("Failed to deploy service %s: %v", t.Name, err)
 			}
+			log.Printf("Service deployed: %s", t.Name)
+			log.Printf("Updating supervisor configuration for service: %s", t.Name)
 			err = command.RunCommand("supervisorctl", nil, "update")
 			if err != nil {
-				log.Fatalf("update supervisor conf failed, error: %s", err.Error())
+				log.Fatalf("Failed to update supervisor configuration: %v", err)
 			}
+			log.Printf("Starting service: %s with supervisor configuration", t.Name)
 			err = command.RunCommand("supervisorctl", nil, "start", t.Name)
 			if err != nil {
-				log.Fatalf("start %s failed, error: %s", t.Name, err.Error())
+				log.Fatalf("Failed to start service %s: %v", t.Name, err)
 			}
-			log.Printf("end to deply server %s\n", t.Name)
+			log.Printf("Service started: %s", t.Name)
 		default:
-			log.Fatalf("task type: %s does not support", t.Type)
+			log.Fatalf("Task type: %s is not supported", t.Type)
 		}
 	}
 }

@@ -62,8 +62,6 @@ func (app *Application) Start() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
-	log.Printf("Application started. Press Ctrl+C to stop.")
-
 	select {
 	case <-cvmDone:
 		log.Printf("CVM boot sequence completed. Application will exit.")
