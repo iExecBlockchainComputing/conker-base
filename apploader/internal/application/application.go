@@ -5,14 +5,13 @@ import (
 	"apploader/internal/cvm"
 	"apploader/internal/secret"
 	"context"
+	"log"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
-
-	"log"
-	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -82,7 +81,12 @@ func (app *Application) Start() {
 func (app *Application) startHTTP(ready chan<- struct{}) {
 	log.Printf("Starting HTTP server on port %s", app.config.Server.Port)
 
-	router := gin.Default()
+	router := gin.New()
+	// Custom logging middleware with log.Printf format
+	router.Use(func(c *gin.Context) {
+		c.Next()
+		log.Printf("API Request: %s %s %d", c.Request.Method, c.Request.URL.Path, c.Writer.Status())
+	})
 
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
