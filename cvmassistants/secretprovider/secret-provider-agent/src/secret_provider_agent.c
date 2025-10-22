@@ -168,15 +168,15 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
         LOG_ERROR("Failed to receive session length %#x (received %zu bytes, expected %zu)", ret, session_len_size, sizeof(uint32_t));
         goto err;
     }
-    size_t session_len = (size_t)ntohl(session_len_net); // from network byte order to host byte order
-    LOG_DEBUG("Received session length: %zu", session_len);
+    uint32_t session_len = ntohl(session_len_net); // from network byte order to host byte order
+    LOG_DEBUG("Received session length: %u", session_len);
     if (session_len > MAX_SESSION_SIZE) {
-        LOG_ERROR("Session length exceeds maximum allowed size (%zu > %zu)", session_len, (size_t) MAX_SESSION_SIZE);
+        LOG_ERROR("Session length exceeds maximum allowed size (%u > %u)", session_len, (uint32_t) MAX_SESSION_SIZE);
         goto err;
     }
 
     
-    int buff_size = (int)session_len + 1; // +1 for null terminator
+    uint32_t buff_size = session_len + 1; // +1 for null terminator
     char* buf = malloc(buff_size);
     if (buf == NULL) {
         LOG_ERROR("Failed to allocate memory for session file");
@@ -196,10 +196,10 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
             goto err;
         }
         bytes_received += len;
-        LOG_DEBUG("Received chunk (%zu bytes), total received: %zu/%zu", len, bytes_received, session_len);
+        LOG_DEBUG("Received chunk (%zu bytes), total received: %zu/%u", len, bytes_received, session_len);
     }
     if (bytes_received != session_len) {
-        LOG_ERROR("Unexpected session size. Expected %zu, got %zu", session_len, bytes_received);
+        LOG_ERROR("Unexpected session size. Expected %u, got %zu", session_len, bytes_received);
         free(buf);
         goto err;
     }
