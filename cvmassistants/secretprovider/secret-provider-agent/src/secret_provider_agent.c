@@ -12,6 +12,8 @@
 
 #define DEFAULT_PORT 1234
 #define DEFAULT_IP "127.0.0.1"
+// size of session
+#define MAX_SESSION_SIZE (100 * 1024 * 1024)  // 100 MB
 #define CHUNK_SIZE 4096
 
 #define LOG_WITH_TIMESTAMP(fmt, level, rats_level, ...) \
@@ -174,6 +176,10 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
     session_len_str[session_len_str_size] = '\0';
     size_t session_len = strtoull(session_len_str, NULL, 10);
     LOG_DEBUG("Parsed session length: %zu", session_len);
+    if (session_len > MAX_SESSION_SIZE) {
+        LOG_ERROR("Session length exceeds maximum allowed size (%zu > %zu)", session_len, (size_t) MAX_SESSION_SIZE);
+        goto err;
+    }
 
     
     int buff_size = (int)session_len + 1; // +1 for null terminator
