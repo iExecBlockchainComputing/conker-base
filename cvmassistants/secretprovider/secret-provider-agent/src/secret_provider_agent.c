@@ -156,19 +156,6 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
         LOG_ERROR("Failed to negotiate %#x", ret);
         goto err;
     }
-    const char* msg;
-    if (appid_flag) {
-        msg = app_id;
-    } else {
-        msg = command_get_secret;
-    }
-
-    size_t len = strlen(msg);
-    ret = rats_tls_transmit(handle, (void*)msg, &len);
-    if (ret != RATS_TLS_ERR_NONE || len != strlen(msg)) {
-        LOG_ERROR("Failed to transmit %#x", ret);
-        goto err;
-    }
     
     // Receive the length of the upcoming session file in a single call, as NUL-terminated decimal string
     char session_len_str[32];
@@ -195,6 +182,7 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
     }
     
     // Receive session data in chunks
+    size_t len;
     size_t bytes_received = 0;
     while (bytes_received < session_len) {
         size_t chunk_size = (session_len - bytes_received > CHUNK_SIZE) ? CHUNK_SIZE : (session_len - bytes_received);
