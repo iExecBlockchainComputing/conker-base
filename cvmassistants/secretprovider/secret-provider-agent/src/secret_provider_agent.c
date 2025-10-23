@@ -12,6 +12,9 @@
 
 #define DEFAULT_PORT 1234
 #define DEFAULT_IP "127.0.0.1"
+// size of session
+#define MAX_SESSION_SIZE (100 * 1024 * 1024)  // 100 MB
+#define CHUNK_SIZE 4096
 
 #define LOG_WITH_TIMESTAMP(fmt, level, rats_level, ...) \
     do { \
@@ -155,36 +158,51 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
         LOG_ERROR("Failed to negotiate %#x", ret);
         goto err;
     }
-    const char* msg;
-    if (appid_flag) {
-        msg = app_id;
-    } else {
-        msg = command_get_secret;
+    
+    // Receive the length of the upcoming session file as uint32_t in network byte order
+    uint32_t session_len_net;
+    size_t session_len_size = sizeof(uint32_t);
+    LOG_DEBUG("Receiving session length as uint32_t: %zu bytes", session_len_size);
+    ret = rats_tls_receive(handle, &session_len_net, &session_len_size);
+    if (ret != RATS_TLS_ERR_NONE || session_len_size != sizeof(uint32_t)) {
+        LOG_ERROR("Failed to receive session length %#x (received %zu bytes, expected %zu)", ret, session_len_size, sizeof(uint32_t));
+        goto err;
+    }
+    uint32_t session_len = ntohl(session_len_net); // from network byte order to host byte order
+    LOG_DEBUG("Received session length: %u", session_len);
+    if (session_len > MAX_SESSION_SIZE) {
+        LOG_ERROR("Session length exceeds maximum allowed size (%u > %u)", session_len, (uint32_t) MAX_SESSION_SIZE);
+        goto err;
     }
 
-    size_t len = strlen(msg);
-    ret = rats_tls_transmit(handle, (void*)msg, &len);
-    if (ret != RATS_TLS_ERR_NONE || len != strlen(msg)) {
-        LOG_ERROR("Failed to transmit %#x", ret);
-        goto err;
-    }
-    int buff_size = 4096;
+    uint32_t buff_size = session_len + 1; // +1 for null terminator
     char* buf = malloc(buff_size);
     if (buf == NULL) {
-        LOG_ERROR("Failed to allocate memory");
+        LOG_ERROR("Failed to allocate memory for session file");
         goto err;
     }
-    len = buff_size;
-    ret = rats_tls_receive(handle, buf, &len);
-    if (ret != RATS_TLS_ERR_NONE) {
-        LOG_ERROR("Failed to receive %#x", ret);
+    
+    // Receive session data in chunks
+    size_t bytes_received = 0;
+    while (bytes_received < session_len) {
+        size_t remaining = session_len - bytes_received ;
+        size_t len = (remaining > CHUNK_SIZE) ? CHUNK_SIZE : remaining;
+        ret = rats_tls_receive(handle, buf + bytes_received, &len);
+        if (ret != RATS_TLS_ERR_NONE) {
+            LOG_ERROR("Failed to receive chunk %#x", ret);
+            free(buf);
+            goto err;
+        }
+        bytes_received += len;
+        LOG_DEBUG("Received chunk (%zu bytes), total received: %zu/%u", len, bytes_received, session_len);
+    }
+    if (bytes_received != session_len) {
+        LOG_ERROR("Unexpected session size. Expected %u, got %zu", session_len, bytes_received);
         free(buf);
         goto err;
     }
 
-    if (len >= buff_size)
-        len = buff_size - 1;
-    buf[len] = '\0';
+    buf[bytes_received] = '\0';
 
     ret = rats_tls_cleanup(handle);
     if (ret != RATS_TLS_ERR_NONE)
