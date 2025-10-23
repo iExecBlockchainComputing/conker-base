@@ -175,7 +175,6 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
         goto err;
     }
 
-
     uint32_t buff_size = session_len + 1; // +1 for null terminator
     char* buf = malloc(buff_size);
     if (buf == NULL) {
