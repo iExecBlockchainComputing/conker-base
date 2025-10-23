@@ -1,42 +1,72 @@
 package cvm
 
-/*
-#include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
-*/
-import "C"
 import (
+	"apploader/internal/config"
 	"apploader/internal/secret"
+	"apploader/pkg/command"
 	"apploader/pkg/conversion"
 	"apploader/pkg/file"
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"path"
 	"strings"
-	"syscall"
 	"text/template"
-	"time"
-	"unsafe"
 
 	"gopkg.in/yaml.v3"
 )
 
 const (
-	JOB       = "job"
-	SERVER    = "server"
-	DockerApp = "dockerApp"
-	APP       = "app"
+	JOB    = "job"
+	SERVER = "server"
 )
 
-const (
-	SUPERVISOR_PATH = "/workplace/supervisord/apploader"
-)
+type CvmBootManager interface {
+	Start()
+}
 
-func DoJob(ca *TaskInfo) error {
-	if ca.Type != JOB {
+type cvmBootManager struct {
+	config          *config.CvmConfig
+	cvmBootSequence *CvmBootSequence
+}
+
+// NewCvmBootManager creates a new cvm service
+func NewCvmBootManager(config *config.CvmConfig) (CvmBootManager, error) {
+	service := &cvmBootManager{config: config}
+	cvmBootSequence, err := service.loadConfig()
+	if err != nil {
+		return nil, err
+	}
+	service.cvmBootSequence = cvmBootSequence
+	return service, nil
+}
+
+// Start starts the cvm service
+func (s *cvmBootManager) Start() {
+	s.processTasks(s.cvmBootSequence.CvmAssistants)
+	s.processTasks(s.cvmBootSequence.AppInfo)
+}
+
+// loadConfig loads the cvm app config
+func (cbm *cvmBootManager) loadConfig() (*CvmBootSequence, error) {
+	appfile, err := os.ReadFile(cbm.config.ConfigPath)
+	if err != nil {
+		return nil, fmt.Errorf("read %s failed, error: %s", cbm.config.ConfigPath, err.Error())
+	}
+	cvmBootSequence := new(CvmBootSequence)
+	err = yaml.Unmarshal(appfile, &cvmBootSequence)
+	if err != nil {
+		return nil, fmt.Errorf("unmarshal %s failed, error: %s", cbm.config.ConfigPath, err.Error())
+	}
+	// validate cvmBootSequence, we want no more than one app
+	if len(cvmBootSequence.AppInfo) >= 1 {
+		return nil, fmt.Errorf("only one application is supported, but got %d", len(cvmBootSequence.AppInfo))
+	}
+	return cvmBootSequence, nil
+}
+
+func (cbm *cvmBootManager) executeTask(taskInfo *TaskInfo) error {
+	if taskInfo.Type != JOB {
 		return fmt.Errorf("this task is not a job")
 	}
 
@@ -45,8 +75,8 @@ func DoJob(ca *TaskInfo) error {
 		envs = append(envs, fmt.Sprintf("%s=%s", k, v))
 	}
 
-	if ca.Env != nil {
-		userEnv, ok := ca.Env.(map[string]interface{})
+	if taskInfo.Env != nil {
+		userEnv, ok := taskInfo.Env.(map[string]interface{})
 		if !ok {
 			return fmt.Errorf("user env format error")
 		}
@@ -56,98 +86,13 @@ func DoJob(ca *TaskInfo) error {
 		}
 	}
 
-	log.Printf("entrypoint is %s", ca.Entrypoint)
-	return RunCommand(ca.Entrypoint, envs, ca.Args...)
+	log.Printf("entrypoint is %s", taskInfo.Entrypoint)
+	return command.RunCommand(taskInfo.Entrypoint, envs, taskInfo.Args...)
 
 }
 
-func RunCommand(name string, envs []string, arg ...string) error {
-	cmd := exec.Command(name, arg...)
-
-	cmd.Dir = path.Dir(name)
-	//
-	stdout, err := cmd.StdoutPipe()
-	cmd.Stderr = cmd.Stdout
-	cmd.Env = envs
-	if err != nil {
-		return err
-	}
-	if err = cmd.Start(); err != nil {
-		return err
-	}
-	//
-	for {
-		tmp := make([]byte, 128)
-		_, err := stdout.Read(tmp)
-		fmt.Print(string(tmp))
-		if err != nil {
-			break
-		}
-	}
-	if err = cmd.Wait(); err != nil {
-		if ex, ok := err.(*exec.ExitError); ok {
-			cmdExitStatus := ex.Sys().(syscall.WaitStatus).ExitStatus()
-			log.Println(cmdExitStatus)
-		}
-		log.Println(err)
-		return err
-	}
-	return nil
-}
-
-func Execv(main string, args ...string) {
-	workdir := path.Dir(main)
-	if err := os.Chdir(workdir); err != nil {
-		log.Fatalf("change to work dir failed, error: %s\n", err.Error())
-	}
-
-	sizeOfArgs_C := len(args) + 2 // +2 for [0]=main [1:end]=args [end]=nil
-	Args_C := make([]*C.char, sizeOfArgs_C)
-	Args_C[0] = C.CString(main)
-	defer C.free(unsafe.Pointer(Args_C[0]))
-	for i, arg := range args {
-		Args_C[i+1] = C.CString(arg)
-		defer C.free(unsafe.Pointer(Args_C[i+1]))
-	}
-	Args_C[sizeOfArgs_C-1] = nil
-	re := C.execv(C.CString(main), (**C.char)(unsafe.Pointer(&Args_C[0])))
-	if re != 0 {
-		log.Fatalf("execv %s failed, code is %d\n", main, re)
-	}
-	return
-}
-
-func ExecvDockerApp(ca *TaskInfo) {
-	if ca.Type != DockerApp {
-		log.Fatalf("task is not a docker app")
-	}
-
-	for k, v := range secret.Secret {
-		err := os.Setenv(k, v)
-		if err != nil {
-			log.Fatalf("set secret env failed, error: %s\n", err.Error())
-		}
-	}
-
-	if ca.Env != nil {
-		userEnv, ok := ca.Env.(map[string]interface{})
-		if !ok {
-			log.Fatalf("user env format error")
-		}
-
-		for k, v := range userEnv {
-			err := os.Setenv(k, v.(string))
-			if err != nil {
-				log.Fatalf("set app env failed, error: %s\n", err.Error())
-			}
-		}
-	}
-
-	Execv(ca.Entrypoint, ca.Args...)
-}
-
-func CreateSevers(ca *TaskInfo) error {
-	if ca.Type != SERVER {
+func (cbm *cvmBootManager) deployService(taskInfo *TaskInfo) error {
+	if taskInfo.Type != SERVER {
 		return fmt.Errorf("task is not a server")
 	}
 
@@ -158,8 +103,8 @@ func CreateSevers(ca *TaskInfo) error {
 	//	envs = append(envs, fmt.Sprintf("%s=%s", k, v))
 	//}
 
-	if ca.Env != nil {
-		userEnv, ok := ca.Env.(map[string]interface{})
+	if taskInfo.Env != nil {
+		userEnv, ok := taskInfo.Env.(map[string]interface{})
 		if !ok {
 			return fmt.Errorf("user env format error")
 		}
@@ -170,60 +115,41 @@ func CreateSevers(ca *TaskInfo) error {
 	}
 
 	sConf := new(SupervisorConf)
-	sConf.Name = ca.Name
-	sConf.Command = ca.Entrypoint + " " + strings.Join(ca.Args, " ")
-	sConf.Workplace = path.Dir(ca.Entrypoint)
+	sConf.Name = taskInfo.Name
+	sConf.Command = taskInfo.Entrypoint + " " + strings.Join(taskInfo.Args, " ")
+	sConf.Workplace = path.Dir(taskInfo.Entrypoint)
 	sConf.Environment = strings.Join(envs, ",")
-	sConf.Priority = ca.Priority
+	sConf.Priority = taskInfo.Priority
 
-	tmpl, err := template.ParseFiles("conf/supervisord.ini.template")
+	tmpl, err := template.ParseFiles(cbm.config.SupervisorTemplatePath)
 	if err != nil {
-		return fmt.Errorf("parse supervisord template file failed, error: %s\n", err.Error())
+		return fmt.Errorf("parse %s failed, error: %s", cbm.config.SupervisorTemplatePath, err.Error())
 	}
 
-	supervisordINIPath := path.Join(SUPERVISOR_PATH, fmt.Sprintf("%s.ini", ca.Name))
+	supervisordINIPath := path.Join(cbm.config.SupervisorPath, fmt.Sprintf("%s.ini", taskInfo.Name))
 	if file.IsFile(supervisordINIPath) {
 		os.RemoveAll(supervisordINIPath)
 	}
 
 	f, err := os.Create(supervisordINIPath)
 	if err != nil {
-		return fmt.Errorf("create supervisord.ini failed, error: %s\n", err.Error())
+		return fmt.Errorf("create %s failed, error: %s", supervisordINIPath, err.Error())
 	}
 	defer f.Close()
 
 	if err := tmpl.Execute(f, sConf); err != nil {
-		return fmt.Errorf("file the supervisord.ini failed, error: %s\n", err.Error())
+		return fmt.Errorf("fill the %s failed, error: %s", supervisordINIPath, err.Error())
 	}
 
 	return nil
 }
 
-func Start() {
-	appfile, err := os.ReadFile("conf/app.yml")
-	if err != nil {
-		log.Fatalf("read app.yml failed, error: %s\n", err.Error())
-	}
-	cvmApp := new(CvmApp)
-	err = yaml.Unmarshal(appfile, &cvmApp)
-	if err != nil {
-		log.Fatalf("unmarshal app.yml failed, error: %s\n", err.Error())
-	}
-	time.Sleep(5 * time.Second)
-
-	log.Println("do all the job over")
-
-	startTask(cvmApp.CvmAssistants)
-
-	startTask(cvmApp.AppInfo)
-}
-
-func startTask(tasks []*TaskInfo) {
+func (cbm *cvmBootManager) processTasks(tasks []*TaskInfo) {
 	for i, t := range tasks {
 		switch t.Type {
 		case JOB:
 			log.Printf("begin to do job %s\n", t.Name)
-			err := DoJob(t)
+			err := cbm.executeTask(t)
 			if err != nil {
 				log.Fatalf("do job %s failed, error: %s\n", t.Name, err.Error())
 			}
@@ -231,23 +157,19 @@ func startTask(tasks []*TaskInfo) {
 		case SERVER:
 			log.Printf("begin to deploy server %s\n", t.Name)
 			t.Priority = i + 2
-			err := CreateSevers(t)
+			err := cbm.deployService(t)
 			if err != nil {
 				log.Fatalf("deploy server %s failed, error: %s\n", t.Name, err)
 			}
-			err = RunCommand("supervisorctl", nil, "update")
+			err = command.RunCommand("supervisorctl", nil, "update")
 			if err != nil {
 				log.Fatalf("update supervisor conf failed, error: %s", err.Error())
 			}
-			err = RunCommand("supervisorctl", nil, "start", t.Name)
+			err = command.RunCommand("supervisorctl", nil, "start", t.Name)
 			if err != nil {
 				log.Fatalf("start %s failed, error: %s", t.Name, err.Error())
 			}
 			log.Printf("end to deply server %s\n", t.Name)
-		case DockerApp:
-			log.Printf("begin to run docker app %s\n", t.Name)
-			log.Printf("docker app will only run the first app\n")
-			ExecvDockerApp(t)
 		default:
 			log.Fatalf("task type: %s does not support", t.Type)
 		}

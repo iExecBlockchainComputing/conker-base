@@ -1,7 +1,7 @@
 package cvm
 
-// CvmApp is the main application configuration
-type CvmApp struct {
+// CvmBootSequence is the main application configuration
+type CvmBootSequence struct {
 	Kind          string      `yaml:"kind"`
 	AppInfo       []*TaskInfo `yaml:"app"`
 	CvmAssistants []*TaskInfo `yaml:"csvAssistants"`
