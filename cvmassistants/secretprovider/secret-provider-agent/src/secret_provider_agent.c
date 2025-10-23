@@ -187,7 +187,8 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
     size_t len;
     size_t bytes_received = 0;
     while (bytes_received < session_len) {
-        size_t chunk_size = (session_len - bytes_received > CHUNK_SIZE) ? CHUNK_SIZE : (session_len - bytes_received);
+        size_t remaining = session_len - bytes_received ;
+        size_t chunk_size = (remaining > CHUNK_SIZE) ? CHUNK_SIZE : remaining;
         len = chunk_size;
         ret = rats_tls_receive(handle, buf + bytes_received, &len);
         if (ret != RATS_TLS_ERR_NONE) {
