@@ -175,7 +175,7 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
         goto err;
     }
 
-    
+
     uint32_t buff_size = session_len + 1; // +1 for null terminator
     char* buf = malloc(buff_size);
     if (buf == NULL) {
@@ -184,12 +184,10 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
     }
     
     // Receive session data in chunks
-    size_t len;
     size_t bytes_received = 0;
     while (bytes_received < session_len) {
         size_t remaining = session_len - bytes_received ;
-        size_t chunk_size = (remaining > CHUNK_SIZE) ? CHUNK_SIZE : remaining;
-        len = chunk_size;
+        size_t len = (remaining > CHUNK_SIZE) ? CHUNK_SIZE : remaining;
         ret = rats_tls_receive(handle, buf + bytes_received, &len);
         if (ret != RATS_TLS_ERR_NONE) {
             LOG_ERROR("Failed to receive chunk %#x", ret);
