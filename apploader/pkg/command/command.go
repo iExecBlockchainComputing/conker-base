@@ -1,7 +1,7 @@
 package command
 
 import (
-	"fmt"
+	"bufio"
 	"log"
 	"os/exec"
 	"path"
@@ -23,20 +23,19 @@ func RunCommand(name string, envs []string, arg ...string) error {
 	if err = cmd.Start(); err != nil {
 		return err
 	}
-	for {
-		tmp := make([]byte, 128)
-		_, err := stdout.Read(tmp)
-		fmt.Print(string(tmp))
-		if err != nil {
-			break
-		}
+	scanner := bufio.NewScanner(stdout)
+	for scanner.Scan() {
+		log.Printf("Command output: %s", scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		log.Printf("Error reading command output: %v", err)
 	}
 	if err = cmd.Wait(); err != nil {
 		if ex, ok := err.(*exec.ExitError); ok {
 			cmdExitStatus := ex.Sys().(syscall.WaitStatus).ExitStatus()
-			log.Println(cmdExitStatus)
+			log.Printf("Command execution failed with exit status: %d", cmdExitStatus)
 		}
-		log.Println(err)
+		log.Printf("Command execution failed: %v", err)
 		return err
 	}
 	return nil
