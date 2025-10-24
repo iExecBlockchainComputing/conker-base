@@ -60,7 +60,7 @@ func (cbm *cvmBootManager) loadConfig() (*CvmBootSequence, error) {
 		return nil, fmt.Errorf("unmarshal %s failed, error: %s", cbm.config.ConfigPath, err.Error())
 	}
 	// validate cvmBootSequence, we want no more than one app
-	if len(cvmBootSequence.AppInfo) >= 1 {
+	if len(cvmBootSequence.AppInfo) > 1 {
 		return nil, fmt.Errorf("only one application is supported, but got %d", len(cvmBootSequence.AppInfo))
 	}
 	return cvmBootSequence, nil
