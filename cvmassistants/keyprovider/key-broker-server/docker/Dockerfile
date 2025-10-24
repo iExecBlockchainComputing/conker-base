@@ -1,8 +1,4 @@
-FROM ubuntu:20.04 as build
-
-#RUN sed -i s@/archive.ubuntu.com/@/mirrors.ustc.edu.cn/@g /etc/apt/sources.list && \
-#    sed -i s@/security.ubuntu.com/@/mirrors.ustc.edu.cn/@g /etc/apt/sources.list && \
-#    apt-get clean
+FROM ubuntu:20.04 AS build
 
 RUN apt-get update \
     && env DEBIAN_FRONTEND=noninteractive apt-get install -y \
@@ -48,14 +44,6 @@ RUN cd /root \
 
 FROM ubuntu:20.04
 
-RUN sed -i s@/archive.ubuntu.com/@/mirrors.ustc.edu.cn/@g /etc/apt/sources.list && \
-    sed -i s@/security.ubuntu.com/@/mirrors.ustc.edu.cn/@g /etc/apt/sources.list && \
-    apt-get clean
-
-#RUN mkdir -p  /usr/share/zoneinfo/
-#COPY /usr/share/zoneinfo /usr/share/zoneinfo
-#RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
-
 RUN apt-get update \
     && env DEBIAN_FRONTEND=noninteractive apt-get install -y \
        libssl-dev \
@@ -88,4 +76,3 @@ ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib/rats-tls
 WORKDIR /workplace/app
 ENTRYPOINT ["/workplace/app/key_broker_server"]
 CMD []
-
