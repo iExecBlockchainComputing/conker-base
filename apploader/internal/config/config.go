@@ -27,7 +27,7 @@ func Load() *Config {
 			Port: getEnv("PORT", ":9090"),
 		},
 		Cvm: CvmConfig{
-			ConfigPath:             getEnv("CVM_CONFIG_PATH", "/workplace/cvm-app/config/app.yml"),
+			ConfigPath:             getEnv("CVM_CONFIG_PATH", "/workplace/apploader/conf/app.yml"),
 			SupervisorPath:         getEnv("SUPERVISOR_PATH", "/workplace/supervisord/apploader"),
 			SupervisorTemplatePath: getEnv("SUPERVISOR_TEMPLATE_PATH", "conf/supervisord.ini.template"),
 		},
