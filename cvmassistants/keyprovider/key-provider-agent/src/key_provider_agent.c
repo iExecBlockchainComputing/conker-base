@@ -62,7 +62,6 @@ int app_log_level = -1;
 #define DEFAULT_PORT 1234
 #define DEFAULT_IP "127.0.0.1"
 
-const char* command_get_key = "getKey";
 char* wrap_key = "";
 
 int push_wrapkey_to_secret_box(const char* wrapkey) {
