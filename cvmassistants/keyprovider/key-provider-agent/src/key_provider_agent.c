@@ -1,16 +1,9 @@
-#include <arpa/inet.h>
 #include <curl/curl.h>
-#include <getopt.h>
-#include <netinet/in.h>
-#include <rats-tls/api.h>
-#include <rats-tls/log.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
-#include <sys/socket.h>
-#include <unistd.h>
-#include <jansson.h>
+#include <sys/time.h>
+#include <time.h>
 int app_log_level = -1;
 #define TIMEPRINT                                                  \
     do {                                                           \
