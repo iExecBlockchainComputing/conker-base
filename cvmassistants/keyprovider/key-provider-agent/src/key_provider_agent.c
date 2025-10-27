@@ -52,8 +52,6 @@ int app_log_level = -1;
         printf(__VA_ARGS__);                    \
     } while (0);
 
-#define DEFAULT_PORT 1234
-#define DEFAULT_IP "127.0.0.1"
 
 char* wrap_key = "";
 
