@@ -1,9 +1,5 @@
 FROM ubuntu:20.04 AS build
 
-RUN sed -i s@/archive.ubuntu.com/@/mirror.ubuntu.ikoula.com/@g /etc/apt/sources.list && \
-    sed -i s@/security.ubuntu.com/@/mirror.ubuntu.ikoula.com/@g /etc/apt/sources.list && \
-    apt-get clean
-
 RUN apt-get update \
     && env DEBIAN_FRONTEND=noninteractive apt-get install -y \
     wget \
@@ -84,10 +80,6 @@ RUN cd /cvm-agent/cvmassistants/attest-helper \
 # Final image
 FROM ubuntu:20.04
 
-RUN sed -i s@/archive.ubuntu.com/@/mirror.ubuntu.ikoula.com/@g /etc/apt/sources.list && \
-    sed -i s@/security.ubuntu.com/@/mirror.ubuntu.ikoula.com/@g /etc/apt/sources.list && \
-    apt-get clean
-
 RUN apt-get update \
     && env DEBIAN_FRONTEND=noninteractive apt-get install -y \
     wget \
@@ -161,9 +153,6 @@ COPY --from=build  /cvm-agent/cvmassistants/secretprovider/secret-provider-agent
 #RUN echo  "export LD_LIBRARY_PATH=/usr/local/lib/rats-tls:$LD_LIBRARY_PATH" >> /etc/profile
 
 #config supervisord
-#RUN sed -i s@/archive.ubuntu.com/@/mirrors.ustc.edu.cn/@g /etc/apt/sources.list && \
-#    sed -i s@/security.ubuntu.com/@/mirrors.ustc.edu.cn/@g /etc/apt/sources.list && \
-#    apt-get clean
 RUN apt-get update \
     && env DEBIAN_FRONTEND=noninteractive apt-get install -y \
     supervisor \
