@@ -69,7 +69,7 @@ int push_wrapkey_to_secret_box(const char* wrapkey) {
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(curl, CURLOPT_DEFAULT_PROTOCOL, "http");
 
-        strcat(request_buffer, "key=wrapkey&value=");
+        strcpy(request_buffer, "key=wrapkey&value=");
         strcat(request_buffer, wrapkey);
         LOG_DEBUG("request body is %s\n", request_buffer)
 
@@ -95,34 +95,23 @@ int push_wrapkey_to_secret_box(const char* wrapkey) {
 
 int main(int argc, char** argv) {
     setvbuf(stdout, NULL, _IONBF, 0);
-    char* mode;
-    mode = getenv("mode");
-    if (NULL == mode) {
-        LOG_ERROR("key provider mode doest not config, support mode: 'local'\n");
+    
+    LOG_INFO("Try to get key from local\n");
+    wrap_key = getenv("localKey");
+    if (NULL == wrap_key) {
+        LOG_ERROR("local-key does not config\n");
+        return -1;
+    }
+    if (strlen(wrap_key) != 32) {
+        LOG_ERROR("Key size is not 32 bytes, please check\n");
         return -1;
     }
 
-    if (!strcmp(mode, "local")) {
-        LOG_INFO("try to get key from local\n");
-        wrap_key = getenv("localKey");
-        if (NULL == wrap_key) {
-            LOG_ERROR("local-key doest not config\n");
-            return -1;
-        }
-        if (strlen(wrap_key) != 32) {
-            LOG_ERROR("key size is not 16byte,please check\n");
-            return -1;
-        }
-    }  else {
-        LOG_ERROR("key provider mode only support 'local'");
-        return -1;
-    }
-
-    LOG_INFO("get wrap_key successful from %s\n", mode);
+    LOG_INFO("Get wrap_key successful from local\n");
     LOG_DEBUG("wrapkey is %s\n", wrap_key);
     int ret = push_wrapkey_to_secret_box(wrap_key);
     if (ret != 0) {
-        LOG_ERROR("push wrapkey to secret box failed\n")
+        LOG_ERROR("Push wrapkey to secret box failed\n");
         return -1;
     }
     return 0;

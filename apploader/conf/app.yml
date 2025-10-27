@@ -23,7 +23,6 @@ csvAssistants:
     type: job
     entrypoint: /workplace/csv-agent/csvassistants/keyprovider/key_provider_agent
     env:
-      mode: local #local or kbs  
       localKey: 00112233445566778899aabbccddeeff 
     args: [""]
 
