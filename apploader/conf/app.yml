@@ -24,9 +24,7 @@ csvAssistants:
     entrypoint: /workplace/csv-agent/csvassistants/keyprovider/key_provider_agent
     env:
       mode: local #local or kbs  
-      localKey: 00112233445566778899aabbccddeeff
-      kbsEndpoint: 127.0.0.1:1234  
-      attestion: csv
+      localKey: 00112233445566778899aabbccddeeff 
     args: [""]
 
 
