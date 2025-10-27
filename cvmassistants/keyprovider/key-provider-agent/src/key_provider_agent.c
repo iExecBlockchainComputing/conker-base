@@ -58,7 +58,7 @@ char* wrap_key = "";
 int push_wrapkey_to_secret_box(const char* wrapkey) {
     CURL* curl;
     CURLcode res;
-    char request_buffer[1024 * 64];
+    char request_buffer[64];
     long http_code = 0;
 
     curl = curl_easy_init();
