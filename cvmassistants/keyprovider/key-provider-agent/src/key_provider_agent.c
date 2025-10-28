@@ -65,7 +65,7 @@ int push_wrapkey_to_secret_box(const char* wrapkey) {
 
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
         if (http_code != 200) {
-            LOG_ERROR("Verify quteo from azure failed, http code is %ld", http_code);
+            LOG_ERROR("Failed to push wrap key to secret box, HTTP response code: %ld", http_code);
             return -1;
         }
         curl_easy_cleanup(curl);
