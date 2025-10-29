@@ -31,7 +31,6 @@ RUN apt-get install -y \
     libssl-dev \
     software-properties-common \
     libcurl4-openssl-dev \
-    libjansson-dev \
     libcbor-dev
 
 #  RA-TLS DCAP libraries:
@@ -85,7 +84,6 @@ RUN apt-get update \
     wget \
     software-properties-common \
     vim \
-    libjansson-dev \
     libcbor-dev
 
 RUN mkdir -p  /usr/share/zoneinfo/
