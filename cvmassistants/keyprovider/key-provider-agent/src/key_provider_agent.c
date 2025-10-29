@@ -4,6 +4,7 @@
 #include <string.h>
 #include <sys/time.h>
 #include <time.h>
+#include <getopt.h>
 // Log levels
 #define LOG_LEVEL_DEBUG 0
 #define LOG_LEVEL_INFO  1
@@ -78,6 +79,48 @@ int push_wrapkey_to_secret_box(const char* wrapkey) {
 
 int main(int argc, char** argv) {
     setvbuf(stdout, NULL, _IONBF, 0);
+    
+    // Command line options
+    char* const short_options = "l:h";
+    struct option long_options[] = {
+        {"log-level", required_argument, NULL, 'l'},
+        {"help", no_argument, NULL, 'h'},
+        {0, 0, 0, 0}
+    };
+    
+    int opt;
+    do {
+        opt = getopt_long(argc, argv, short_options, long_options, NULL);
+        switch (opt) {
+            case 'l':
+                if (!strcasecmp(optarg, "debug"))
+                    app_log_level = LOG_LEVEL_DEBUG;
+                else if (!strcasecmp(optarg, "info"))
+                    app_log_level = LOG_LEVEL_INFO;
+                else if (!strcasecmp(optarg, "warn"))
+                    app_log_level = LOG_LEVEL_WARN;
+                else if (!strcasecmp(optarg, "error"))
+                    app_log_level = LOG_LEVEL_ERROR;
+                else {
+                    LOG_ERROR("Invalid log level: %s. Valid options: debug, info, warn, error", optarg);
+                    return -1;
+                }
+                break;
+            case 'h':
+                puts(
+                    "    Usage:\n\n"
+                    "        key-provider-agent [options]\n\n"
+                    "    Options:\n\n"
+                    "        --log-level/-l value    set the log level (debug, info, warn, error)\n"
+                    "        --help/-h               show the usage\n");
+                exit(0);
+            case -1:
+                break;
+            default:
+                puts("Use --help for usage information");
+                exit(-1);
+        }
+    } while (opt != -1);
     
     LOG_INFO("Try to get key from local");
     wrap_key = getenv("localKey");
