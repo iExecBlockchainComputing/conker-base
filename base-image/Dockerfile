@@ -63,19 +63,6 @@ RUN cd /cvm-agent/cvmassistants/keyprovider/key-provider-agent \
 RUN cd /cvm-agent/cvmassistants/secretprovider/secret-provider-agent \
     && make all
 
-# build attest-helper
-RUN git clone https://github.com/guanzhi/GmSSL.git \
-    && cd GmSSL \
-    && git checkout GmSSL-v2 \
-    && git checkout 5b904768 \
-    && sed -i "s/qw\/glob/qw\/:glob/g" Configure \
-    && sed -i "s/qw\/glob/qw\/:glob/g" test/build.info \
-    && ./config --prefix=/opt/gmssl \
-    && make install
-
-RUN cd /cvm-agent/cvmassistants/attest-helper \
-    && go build
-
 # Final image
 FROM ubuntu:20.04
 
@@ -160,13 +147,6 @@ RUN apt-get update \
 #todo make supervisord.conf configurable so that it can change the log path
 COPY --from=build /cvm-agent/base-image/supervisord/supervisord.conf /etc/supervisor/
 COPY --from=build /cvm-agent/apploader/conf/appload-supervisord.ini /workplace/supervisord/apploader
-
-#get attest-helper
-RUN mkdir -p /workplace/cvm-agent/cvmassistants/attest-helper \
-    && mkdir -p /opt/gmssl
-
-COPY --from=build /cvm-agent/cvmassistants/attest-helper/attest-helper /workplace/cvm-agent/cvmassistants/attest-helper/attest-helper.bin
-COPY --from=build /opt/gmssl /opt/gmssl
 
 #install firewall
 RUN mkdir -p /workplace/cvm-agent/cvmassistants/firewall \
