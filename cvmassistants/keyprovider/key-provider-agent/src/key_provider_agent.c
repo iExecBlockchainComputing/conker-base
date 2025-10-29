@@ -10,6 +10,7 @@
 #define LOG_LEVEL_INFO  1
 #define LOG_LEVEL_WARN  2
 #define LOG_LEVEL_ERROR 3
+#define LOG_LEVEL_NONE  4
 
 int app_log_level = LOG_LEVEL_INFO;  // Default to INFO level
 
@@ -101,17 +102,15 @@ int main(int argc, char** argv) {
                     app_log_level = LOG_LEVEL_WARN;
                 else if (!strcasecmp(optarg, "error"))
                     app_log_level = LOG_LEVEL_ERROR;
-                else {
-                    LOG_ERROR("Invalid log level: %s. Valid options: debug, info, warn, error", optarg);
-                    return -1;
-                }
+                else if (!strcasecmp(optarg, "off"))
+                    app_log_level = LOG_LEVEL_NONE;
                 break;
             case 'h':
                 puts(
                     "    Usage:\n\n"
                     "        key-provider-agent [options]\n\n"
                     "    Options:\n\n"
-                    "        --log-level/-l value    set the log level (debug, info, warn, error)\n"
+                    "        --log-level/-l value    set the log level (debug, info, warn, error, off)\n"
                     "        --help/-h               show the usage\n");
                 exit(0);
             case -1:
