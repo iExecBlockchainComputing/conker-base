@@ -1,10 +1,10 @@
 #include <curl/curl.h>
+#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
 #include <time.h>
-#include <getopt.h>
 // Log levels
 #define LOG_LEVEL_DEBUG 0
 #define LOG_LEVEL_INFO  1
