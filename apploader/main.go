@@ -1,15 +1,14 @@
 package main
 
 import (
-	csvapp "apploader/csv-app"
-	"apploader/secret_server"
+	"apploader/internal/application"
+	"apploader/internal/config"
 	"log"
 	"os"
 )
 
 func main() {
 	log.SetFlags(log.Lshortfile | log.LstdFlags)
-	go secret_server.StartSecretServer()
-	csvapp.Start()
+	application.New(config.Load()).Start()
 	os.Exit(0)
 }

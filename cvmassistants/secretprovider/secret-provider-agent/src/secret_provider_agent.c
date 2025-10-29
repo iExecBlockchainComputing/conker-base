@@ -1,66 +1,45 @@
 #include <arpa/inet.h>
-#include <curl/curl.h>
 #include <getopt.h>
-#include <jansson.h>
 #include <netinet/in.h>
 #include <rats-tls/api.h>
-#include <rats-tls/log.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 #include <sys/socket.h>
+#include <time.h>
 #include <unistd.h>
-int app_log_level = -1;
-
-#define TIMEPRINT                                                  \
-    do {                                                           \
-        struct timeval now;                                        \
-        struct tm* ptime = NULL;                                   \
-        gettimeofday(&now, NULL);                                  \
-        ptime = gmtime(&now.tv_sec);                               \
-        printf("[%d/%d/%d %02d:%02d:%02d]", 1900 + ptime->tm_year, \
-               1 + ptime->tm_mon, ptime->tm_mday, ptime->tm_hour,  \
-               ptime->tm_min, ptime->tm_sec);                      \
-    } while (0);
-
-#define LOG_DEBUG(...)                              \
-    do {                                            \
-        if (app_log_level == 0) {                   \
-            TIMEPRINT                               \
-            printf("[Debug]");                      \
-            printf("[%s:%d] ", __FILE__, __LINE__); \
-            printf(__VA_ARGS__);                    \
-        }                                           \
-    } while (0);
-
-#define LOG_WARING(...)                         \
-    do {                                        \
-        TIMEPRINT                               \
-        printf("[Waring]");                     \
-        printf("[%s:%d] ", __FILE__, __LINE__); \
-        printf(__VA_ARGS__);                    \
-                                                \
-    } while (0);
-
-#define LOG_ERROR(...)                          \
-    do {                                        \
-        TIMEPRINT                               \
-        printf("[Error]");                      \
-        printf("[%s:%d] ", __FILE__, __LINE__); \
-        printf(__VA_ARGS__);                    \
-    } while (0);
-
-#define LOG_INFO(...)                           \
-    do {                                        \
-        TIMEPRINT                               \
-        printf("[Info]");                       \
-        printf("[%s:%d] ", __FILE__, __LINE__); \
-        printf(__VA_ARGS__);                    \
-    } while (0);
 
 #define DEFAULT_PORT 1234
 #define DEFAULT_IP "127.0.0.1"
+// size of session
+#define MAX_SESSION_SIZE (100 * 1024 * 1024)  // 100 MB
+#define CHUNK_SIZE 4096
+
+#define LOG_WITH_TIMESTAMP(fmt, level, rats_level, ...) \
+    do { \
+        if (log_level <= rats_level) { \
+            time_t now = time(NULL); \
+            struct tm *t = gmtime(&now); \
+            char ts[24]; \
+            strftime(ts, sizeof(ts), "%Y-%m-%d %H:%M:%S UTC", t); \
+            printf("%-29s [%-5s] [%s:%d] " fmt "\n", ts, level, __FILE__, __LINE__, ##__VA_ARGS__); \
+        } \
+    } while (0)
+
+#define LOG_DEBUG(fmt, ...) \
+    LOG_WITH_TIMESTAMP(fmt, "DEBUG", RATS_TLS_LOG_LEVEL_DEBUG, ##__VA_ARGS__)
+
+#define LOG_INFO(fmt, ...) \
+    LOG_WITH_TIMESTAMP(fmt, "INFO", RATS_TLS_LOG_LEVEL_INFO, ##__VA_ARGS__)
+
+#define LOG_WARN(fmt, ...) \
+    LOG_WITH_TIMESTAMP(fmt, "WARN", RATS_TLS_LOG_LEVEL_WARN, ##__VA_ARGS__)
+
+#define LOG_ERROR(fmt, ...) \
+    LOG_WITH_TIMESTAMP(fmt, "ERROR", RATS_TLS_LOG_LEVEL_ERROR, ##__VA_ARGS__)
+
+rats_tls_log_level_t log_level = RATS_TLS_LOG_LEVEL_INFO;
 
 const char* command_get_secret = "getSecret";
 
@@ -73,6 +52,35 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
                                            char* ip,
                                            int port,
                                            bool appid_flag) {
+
+    bool validation_error = false;
+    if (attester_type == NULL || strlen(attester_type) >= ENCLAVE_ATTESTER_TYPE_NAME_SIZE) {
+        LOG_ERROR("attester_type is NULL or exceeds maximum allowed size (%d)",
+            ENCLAVE_ATTESTER_TYPE_NAME_SIZE - 1);
+        validation_error = true;
+    }
+
+    if (verifier_type == NULL || strlen(verifier_type) >= ENCLAVE_VERIFIER_TYPE_NAME_SIZE) {
+        LOG_ERROR("verifier_type is NULL or exceeds maximum allowed size (%d)",
+            ENCLAVE_VERIFIER_TYPE_NAME_SIZE - 1);
+        validation_error = true;
+    }
+
+    if (tls_type == NULL || strlen(tls_type) >= TLS_TYPE_NAME_SIZE) {
+        LOG_ERROR("tls_type is NULL or exceeds maximum allowed size (%d)",
+            TLS_TYPE_NAME_SIZE - 1);
+        validation_error = true;
+    }
+
+    if (crypto_type == NULL || strlen(crypto_type) >= CRYPTO_TYPE_NAME_SIZE) {
+        LOG_ERROR("crypto_type is NULL or exceeds maximum allowed size (%d)",
+            CRYPTO_TYPE_NAME_SIZE - 1);
+        validation_error = true;
+    }
+
+    if (validation_error) {
+        return NULL;
+    }
     rats_tls_conf_t conf;
 
     memset(&conf, 0, sizeof(conf));
@@ -88,16 +96,20 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
             conf.custom_claims = (claim_t*)custom_claims;
             conf.custom_claims_length = 1;
         } else {
-            LOG_ERROR("could not read the app_id from env\n");
+            LOG_ERROR("could not read the app_id from env");
             return NULL;
         }
     }
 
     conf.log_level = log_level;
-    strcpy(conf.attester_type, attester_type);
-    strcpy(conf.verifier_type, verifier_type);
-    strcpy(conf.tls_type, tls_type);
-    strcpy(conf.crypto_type, crypto_type);
+    strncpy(conf.attester_type, attester_type, ENCLAVE_ATTESTER_TYPE_NAME_SIZE - 1);
+    conf.attester_type[ENCLAVE_ATTESTER_TYPE_NAME_SIZE - 1] = '\0';
+    strncpy(conf.verifier_type, verifier_type, ENCLAVE_VERIFIER_TYPE_NAME_SIZE - 1);
+    conf.verifier_type[ENCLAVE_VERIFIER_TYPE_NAME_SIZE - 1] = '\0';
+    strncpy(conf.tls_type, tls_type, TLS_TYPE_NAME_SIZE - 1);
+    conf.tls_type[TLS_TYPE_NAME_SIZE - 1] = '\0';
+    strncpy(conf.crypto_type, crypto_type, CRYPTO_TYPE_NAME_SIZE - 1);
+    conf.crypto_type[CRYPTO_TYPE_NAME_SIZE - 1] = '\0';
     conf.cert_algo = RATS_TLS_CERT_ALGO_DEFAULT;
     if (mutual)
         conf.flags |= RATS_TLS_CONF_FLAGS_MUTUAL;
@@ -108,7 +120,7 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
      */
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) {
-        LOG_ERROR("failed to call socket()\n");
+        LOG_ERROR("failed to call socket()");
         return NULL;
     }
     struct sockaddr_in s_addr;
@@ -118,150 +130,105 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
 
     /* Get the server IPv4 address from the command line call */
     if (inet_pton(AF_INET, ip, &s_addr.sin_addr) != 1) {
-        LOG_ERROR("invalid server address\n");
+        LOG_ERROR("invalid server address");
+        close(sockfd);
         return NULL;
     }
 
     /* Connect to the server */
     if (connect(sockfd, (struct sockaddr*)&s_addr, sizeof(s_addr)) == -1) {
-        LOG_ERROR("failed to call connect()\n");
+        LOG_ERROR("failed to call connect()");
+        close(sockfd);
         return NULL;
     }
     rats_tls_handle handle;
     rats_tls_err_t ret = rats_tls_init(&conf, &handle);
     if (ret != RATS_TLS_ERR_NONE) {
-        LOG_ERROR("Failed to initialize rats tls %#x\n", ret);
+        LOG_ERROR("Failed to initialize rats tls %#x", ret);
+        close(sockfd);
         return NULL;
     }
     ret = rats_tls_set_verification_callback(&handle, NULL);
     if (ret != RATS_TLS_ERR_NONE) {
-        LOG_ERROR("Failed to set verification callback %#x\n", ret);
-        return NULL;
+        LOG_ERROR("Failed to set verification callback %#x", ret);
+        goto err;
     }
     ret = rats_tls_negotiate(handle, sockfd);
     if (ret != RATS_TLS_ERR_NONE) {
-        LOG_ERROR("Failed to negotiate %#x\n", ret);
+        LOG_ERROR("Failed to negotiate %#x", ret);
         goto err;
     }
-    const char* msg;
-    if (appid_flag) {
-        msg = app_id;
-    } else {
-        msg = command_get_secret;
+    
+    // Receive the length of the upcoming session file as uint32_t in network byte order
+    uint32_t session_len_net;
+    size_t session_len_size = sizeof(uint32_t);
+    LOG_DEBUG("Receiving session length as uint32_t: %zu bytes", session_len_size);
+    ret = rats_tls_receive(handle, &session_len_net, &session_len_size);
+    if (ret != RATS_TLS_ERR_NONE || session_len_size != sizeof(uint32_t)) {
+        LOG_ERROR("Failed to receive session length %#x (received %zu bytes, expected %zu)", ret, session_len_size, sizeof(uint32_t));
+        goto err;
+    }
+    uint32_t session_len = ntohl(session_len_net); // from network byte order to host byte order
+    LOG_DEBUG("Received session length: %u", session_len);
+    if (session_len > MAX_SESSION_SIZE) {
+        LOG_ERROR("Session length exceeds maximum allowed size (%u > %u)", session_len, (uint32_t) MAX_SESSION_SIZE);
+        goto err;
     }
 
-    size_t len = strlen(msg);
-    ret = rats_tls_transmit(handle, (void*)msg, &len);
-    if (ret != RATS_TLS_ERR_NONE || len != strlen(msg)) {
-        LOG_ERROR("Failed to transmit %#x\n", ret);
-        goto err;
-    }
-    int buff_size = 4096;
+    uint32_t buff_size = session_len + 1; // +1 for null terminator
     char* buf = malloc(buff_size);
-    len = buff_size;
-    ret = rats_tls_receive(handle, buf, &len);
-    if (ret != RATS_TLS_ERR_NONE) {
-        LOG_ERROR("Failed to receive %#x\n", ret);
+    if (buf == NULL) {
+        LOG_ERROR("Failed to allocate memory for session file");
+        goto err;
+    }
+    
+    // Receive session data in chunks
+    size_t bytes_received = 0;
+    while (bytes_received < session_len) {
+        size_t remaining = session_len - bytes_received ;
+        size_t len = (remaining > CHUNK_SIZE) ? CHUNK_SIZE : remaining;
+        ret = rats_tls_receive(handle, buf + bytes_received, &len);
+        if (ret != RATS_TLS_ERR_NONE) {
+            LOG_ERROR("Failed to receive chunk %#x", ret);
+            free(buf);
+            goto err;
+        }
+        bytes_received += len;
+        LOG_DEBUG("Received chunk (%zu bytes), total received: %zu/%u", len, bytes_received, session_len);
+    }
+    if (bytes_received != session_len) {
+        LOG_ERROR("Unexpected session size. Expected %u, got %zu", session_len, bytes_received);
+        free(buf);
         goto err;
     }
 
-    if (len >= buff_size)
-        len = buff_size - 1;
-    buf[len] = '\0';
+    buf[bytes_received] = '\0';
 
     ret = rats_tls_cleanup(handle);
     if (ret != RATS_TLS_ERR_NONE)
-        LOG_ERROR("Failed to cleanup %#x\n", ret);
+        LOG_ERROR("Failed to cleanup %#x", ret);
 
+    close(sockfd);
     return buf;
 
 err:
-    /* Ignore the error code of cleanup in order to return the prepositional
-     * error */
+    /* Ignore the error code of cleanup in order to return the prepositional error */
     rats_tls_cleanup(handle);
+    close(sockfd);
     return NULL;
-}
-
-int push_wrapkey_to_secret_box(const char* secret) {
-    json_error_t error;
-    json_t* json_secret = json_loads(secret, 0, &error);
-    if (!json_secret) {
-        LOG_ERROR("secret json format error\n");
-        return -1;
-    }
-
-    void* iter = json_object_iter(json_secret);
-    while (iter != NULL) {
-        const char* key = json_object_iter_key(iter);       //
-        json_t* json_value = json_object_iter_value(iter);  //
-        if (json_value == NULL) {
-            printf("json_object_iter_value fail\n");
-            return -1;
-        }
-        const char* value;
-        switch (json_typeof(json_value)) {
-            case JSON_STRING: {
-                value = json_string_value(json_value);
-                break;
-            }
-            default: {
-                LOG_WARING("the value of %s is not string, not support yet\n", key);
-            }
-        }
-        LOG_DEBUG("key is %s, value is %s\n", key, value)
-
-        iter = json_object_iter_next(json_secret, iter);
-
-        CURL* curl;
-        CURLcode res;
-        char request_buffer[1024 * 64] = {0};
-        long http_code = 0;
-        curl = curl_easy_init();
-        if (curl) {
-            // get token
-            curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "POST");
-            curl_easy_setopt(curl, CURLOPT_URL, "http://127.0.0.1:9090/secret");
-            curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-            curl_easy_setopt(curl, CURLOPT_DEFAULT_PROTOCOL, "http");
-
-            strcat(request_buffer, "key=");
-            strcat(request_buffer, key);
-            strcat(request_buffer, "&value=");
-            strcat(request_buffer, value);
-            LOG_DEBUG("request body is %s\n", request_buffer)
-
-            curl_easy_setopt(curl, CURLOPT_POSTFIELDS, request_buffer);
-            res = curl_easy_perform(curl);
-            if (res != CURLE_OK) {
-                LOG_ERROR("curl_easy_perform() failed: %s \n", curl_easy_strerror(res));
-                return -1;
-            }
-
-            curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
-            if (http_code != 200) {
-                LOG_ERROR("verify quteo from azure failed, http code is ;%ld\n", http_code);
-                return -1;
-            }
-            curl_easy_cleanup(curl);
-        } else {
-            LOG_ERROR("init curl failed\n");
-            return -1;
-        }
-    }
-    return 0;
 }
 
 int main(int argc, char** argv) {
     setvbuf(stdout, NULL, _IONBF, 0);
     char* secret = "";
-    LOG_INFO("try to get key from kbs\n");
+    LOG_INFO("try to get key from kbs");
     char* kbs_endpoint = getenv("kbsEndpoint");
     if (NULL == kbs_endpoint) {
-        LOG_ERROR("kbs mode must config kbsEndpoint\n");
+        LOG_ERROR("kbs mode must config kbsEndpoint");
         return -1;
     }
 
-    LOG_DEBUG("config of kbsEndpoint is %s\n", kbs_endpoint);
+    LOG_DEBUG("config of kbsEndpoint is %s", kbs_endpoint);
 
     char* secret_save_path = NULL;
     char* srv_ip = NULL;
@@ -271,11 +238,11 @@ int main(int argc, char** argv) {
     srv_ip = strtok(kbs_endpoint, ":");
     str_port = strtok(NULL, ":");
     if (NULL == str_port) {
-        LOG_ERROR("kbsEndpoint format error, eg: 127.0.0.1:5443\n");
+        LOG_ERROR("kbsEndpoint format error, eg: 127.0.0.1:5443");
         return -1;
     }
     port = atoi(str_port);
-    char* const short_options = "a:v:t:c:ml:DEhfs:";
+    char* const short_options = "a:v:t:c:ml:fs:h";
     struct option long_options[] = {
         {"attester", required_argument, NULL, 'a'},
         {"verifier", required_argument, NULL, 'v'},
@@ -283,8 +250,8 @@ int main(int argc, char** argv) {
         {"crypto", required_argument, NULL, 'c'},
         {"mutual", no_argument, NULL, 'm'},
         {"log-level", required_argument, NULL, 'l'},
-        {"appId", required_argument, NULL, 'f'},
-        {"savePath", no_argument, NULL, 's'},
+        {"appId", no_argument, NULL, 'f'},
+        {"savePath", required_argument, NULL, 's'},
         {"help", no_argument, NULL, 'h'},
         {0, 0, 0, 0}};
 
@@ -295,7 +262,6 @@ int main(int argc, char** argv) {
     bool mutual = true;
     bool appid_flag = false;
     int opt;
-    rats_tls_log_level_t log_level = RATS_TLS_LOG_LEVEL_INFO;
     do {
         opt = getopt_long(argc, argv, short_options, long_options, NULL);
         switch (opt) {
@@ -357,35 +323,31 @@ int main(int argc, char** argv) {
         }
     } while (opt != -1);
 
-    global_log_level = log_level;
-    app_log_level = log_level;
+    LOG_INFO("Selected log level %d", log_level);
+
+    if (secret_save_path == NULL) {
+        LOG_ERROR("Path to store secret locally is missing");
+        return -1;
+    }
+    FILE* file = fopen(secret_save_path, "w");
+    if (file == NULL) {
+        LOG_ERROR("Failed to open the file %s", secret_save_path);
+        return -1;
+    }
 
     secret = get_secret_from_kbs_through_rats_tls(log_level, attester_type, verifier_type,
                                                   tls_type, crypto_type, mutual, srv_ip,
                                                   port, appid_flag);
-    if (NULL == secret) {
-        LOG_ERROR("get secret from kbs failed\n");
+    if (secret == NULL) {
+        LOG_ERROR("get secret from kbs failed");
         return -1;
     }
 
-    LOG_INFO("get secret successful \n");
-    LOG_DEBUG("secret is %s\n", secret);
+    LOG_INFO("get secret successful");
+    LOG_DEBUG("secret is %s", secret);
 
-    if (secret_save_path != NULL) {
-        FILE* file = fopen(secret_save_path, "w");
-        if (file == NULL) {
-            LOG_ERROR("Failed to open the file %s\n", secret_save_path);
-            return -1;
-        }
-        fputs(secret, file);
-        fclose(file);
-    } else {
-        int ret = push_wrapkey_to_secret_box(secret);
-        if (ret != 0) {
-            LOG_ERROR("push wrapkey to secret box failed\n")
-            return -1;
-        }
-    }
-
+    fputs(secret, file);
+    fclose(file);
+    free(secret);
     return 0;
 }

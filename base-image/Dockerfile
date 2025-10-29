@@ -1,59 +1,50 @@
-FROM ubuntu:20.04 as build
-
-RUN sed -i s@/archive.ubuntu.com/@/mirror.ubuntu.ikoula.com/@g /etc/apt/sources.list && \
-    sed -i s@/security.ubuntu.com/@/mirror.ubuntu.ikoula.com/@g /etc/apt/sources.list && \
-    apt-get clean
+FROM ubuntu:20.04 AS build
 
 RUN apt-get update \
     && env DEBIAN_FRONTEND=noninteractive apt-get install -y \
-       wget \
-       pkg-config \
-       unzip \
-       build-essential
+    wget \
+    pkg-config \
+    unzip \
+    build-essential
+
 ARG VERSION=latest
 RUN echo $VERSION > /VERSION
 
 COPY tmp /cvm-agent
 
-RUN wget --no-proxy --progress=bar:force -c https://dl.google.com/go/go1.18.7.linux-amd64.tar.gz -O - | tar -xz -C /usr/local
+RUN wget --no-proxy --progress=bar:force -c https://dl.google.com/go/go1.24.9.linux-amd64.tar.gz -O - | tar -xz -C /usr/local
+ENV PATH=$PATH:/usr/local/go/bin
 
 RUN cd /cvm-agent/apploader \
-    && PATH=$PATH:/usr/local/go/bin \
-       GOPROXY=https://goproxy.cn,direct \
-       go build -ldflags "-w -s -X apploader/version.version=${VERSION}" -o apploader
-
+    && go build -ldflags "-w -s -X apploader/version.version=${VERSION}" -o apploader
 
 RUN cd /cvm-agent/cvmassistants/pkitool \
-    && PATH=$PATH:/usr/local/go/bin \
-       GOPROXY=https://goproxy.cn,direct \
-       go build -ldflags "-w -s -X apploader/version.version=${VERSION}" -o pkitool
+    && go build -ldflags "-w -s -X apploader/version.version=${VERSION}" -o pkitool
 
 ## build keyprovider
 RUN apt-get install -y \
-     git     \
-     make    \
-     cmake   \
-     gcc     \
-     cargo   \
-     libssl-dev \
-     software-properties-common \
-     libcurl4-openssl-dev \
-     libjansson-dev \
-     libcbor-dev 
+    git     \
+    make    \
+    cmake   \
+    gcc     \
+    cargo   \
+    libssl-dev \
+    software-properties-common \
+    libcurl4-openssl-dev \
+    libjansson-dev \
+    libcbor-dev
 
 #  RA-TLS DCAP libraries:
-
 RUN echo 'deb [arch=amd64] https://download.01.org/intel-sgx/sgx_repo/ubuntu focal main' | tee /etc/apt/sources.list.d/intel-sgx.list > /dev/null \
     && wget -O - https://download.01.org/intel-sgx/sgx_repo/ubuntu/intel-sgx-deb.key | apt-key add -\
     && apt-get update \
     && apt-get install -y \
-       libsgx-dcap-quote-verify-dev \
-       libsgx-dcap-ql-dev \
-       libsgx-uae-service \
-       libtdx-attest=1.20.100.2-focal1 \
-       libtdx-attest-dev=1.20.100.2-focal1 \
-       libsgx-dcap-default-qpl-dev 
-       
+    libsgx-dcap-quote-verify-dev \
+    libsgx-dcap-ql-dev \
+    libsgx-uae-service \
+    libtdx-attest=1.20.100.2-focal1 \
+    libtdx-attest-dev=1.20.100.2-focal1 \
+    libsgx-dcap-default-qpl-dev
 
 RUN mkdir -p $HOME/.cargo/ && echo '[source.crates-io] \n registry = "git://mirrors.ustc.edu.cn/crates.io-index"' >> $HOME/.cargo/config
 
@@ -73,7 +64,6 @@ RUN cd /cvm-agent/cvmassistants/keyprovider/key-provider-agent \
 RUN cd /cvm-agent/cvmassistants/secretprovider/secret-provider-agent \
     && make all
 
-
 # build attest-helper
 RUN git clone https://github.com/guanzhi/GmSSL.git \
     && cd GmSSL \
@@ -83,24 +73,20 @@ RUN git clone https://github.com/guanzhi/GmSSL.git \
     && sed -i "s/qw\/glob/qw\/:glob/g" test/build.info \
     && ./config --prefix=/opt/gmssl \
     && make install
+
 RUN cd /cvm-agent/cvmassistants/attest-helper \
-    && PATH=$PATH:/usr/local/go/bin \
-    GOPROXY=https://goproxy.cn,direct \
-    go build
+    && go build
 
+# Final image
 FROM ubuntu:20.04
-
-RUN sed -i s@/archive.ubuntu.com/@/mirror.ubuntu.ikoula.com/@g /etc/apt/sources.list && \
-    sed -i s@/security.ubuntu.com/@/mirror.ubuntu.ikoula.com/@g /etc/apt/sources.list && \
-    apt-get clean
 
 RUN apt-get update \
     && env DEBIAN_FRONTEND=noninteractive apt-get install -y \
-       wget \
-       software-properties-common \
-       vim \
-       libjansson-dev \
-       libcbor-dev 
+    wget \
+    software-properties-common \
+    vim \
+    libjansson-dev \
+    libcbor-dev
 
 RUN mkdir -p  /usr/share/zoneinfo/
 COPY zoneinfo /usr/share/zoneinfo
@@ -122,7 +108,6 @@ COPY --from=build /cvm-agent/apploader/conf  /workplace/apploader/conf/
 #get network-tool
 COPY --from=build /cvm-agent/cvmassistants/network-tool/network-config.sh /workplace/cvm-agent/cvmassistants/network-tool/
 
-
 # get pkitool
 COPY --from=build  /cvm-agent/cvmassistants/pkitool/pkitool  /workplace/cvm-agent/cvmassistants/pkitool
 COPY --from=build /cvm-agent/cvmassistants/pkitool/conf /workplace/cvm-agent/cvmassistants/pkitool/conf
@@ -132,25 +117,25 @@ RUN apt install -y cryptsetup-bin
 COPY --from=build  /cvm-agent/cvmassistants/disktool/ /workplace/cvm-agent/cvmassistants/disktool
 
 #for support tdx attest
-RUN echo "port=4050" > /etc/tdx-attest.conf 
+RUN echo "port=4050" > /etc/tdx-attest.conf
 
 #get keyprovider
 #for csv cert: /opt/csv/hsk_cek/<chip_id>/hsk_cek.cert
 RUN  mkdir -p /workplace/cvm-agent/cvmassistants/keyprovider \
-     && mkdir -p /usr/local/lib/rats-tls \
-     && mkdir -p /opt/csv/hsk_cek/
+    && mkdir -p /usr/local/lib/rats-tls \
+    && mkdir -p /opt/csv/hsk_cek/
 
 ##  RA-TLS DCAP libraries:
 RUN echo 'deb [arch=amd64] https://download.01.org/intel-sgx/sgx_repo/ubuntu focal main' | tee /etc/apt/sources.list.d/intel-sgx.list > /dev/null \
     && wget -O - https://download.01.org/intel-sgx/sgx_repo/ubuntu/intel-sgx-deb.key | apt-key add -\
     && apt-get update \
     && apt-get install -y \
-       libsgx-dcap-quote-verify \
-       libsgx-dcap-ql \
-       libsgx-uae-service \
-       libtdx-attest=1.20.100.2-focal1 \
-       libtdx-attest-dev=1.20.100.2-focal1 \
-       libsgx-dcap-default-qpl
+    libsgx-dcap-quote-verify \
+    libsgx-dcap-ql \
+    libsgx-uae-service \
+    libtdx-attest=1.20.100.2-focal1 \
+    libtdx-attest-dev=1.20.100.2-focal1 \
+    libsgx-dcap-default-qpl
 
 ##install msr in docker
 COPY --from=build /cvm-agent/cvmassistants/keyprovider/key-provider-agent/modules/msr.ko /workplace/cvm-agent/cvmassistants/keyprovider
@@ -168,17 +153,14 @@ COPY --from=build  /cvm-agent/cvmassistants/secretprovider/secret-provider-agent
 #RUN echo  "export LD_LIBRARY_PATH=/usr/local/lib/rats-tls:$LD_LIBRARY_PATH" >> /etc/profile
 
 #config supervisord
-#RUN sed -i s@/archive.ubuntu.com/@/mirrors.ustc.edu.cn/@g /etc/apt/sources.list && \
-#    sed -i s@/security.ubuntu.com/@/mirrors.ustc.edu.cn/@g /etc/apt/sources.list && \
-#    apt-get clean
 RUN apt-get update \
     && env DEBIAN_FRONTEND=noninteractive apt-get install -y \
-       supervisor \
-       pip \
-       curl \
+    supervisor \
+    pip \
+    curl \
     && pip3 install requests -i https://pypi.tuna.tsinghua.edu.cn/simple
 #todo make supervisord.conf configurable so that it can change the log path
-COPY --from=build /cvm-agent/base-image/k8s/supervisord.conf /etc/supervisor/
+COPY --from=build /cvm-agent/base-image/supervisord/supervisord.conf /etc/supervisor/
 COPY --from=build /cvm-agent/apploader/conf/appload-supervisord.ini /workplace/supervisord/apploader
 
 #get attest-helper
