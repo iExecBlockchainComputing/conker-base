@@ -122,11 +122,6 @@ RUN echo 'deb [arch=amd64] https://download.01.org/intel-sgx/sgx_repo/ubuntu foc
     libtdx-attest-dev=1.20.100.2-focal1 \
     libsgx-dcap-default-qpl
 
-##install msr in docker
-COPY --from=build /cvm-agent/cvmassistants/keyprovider/key-provider-agent/modules/msr.ko /workplace/cvm-agent/cvmassistants/keyprovider
-RUN apt-get install -y kmod msr-tools
-#    && insmod /workplace/cvm-agent/cvmassistants/keyprovider/msr.ko
-
 COPY --from=build  /cvm-agent/cvmassistants/keyprovider/key-provider-agent/key_provider_agent /workplace/cvm-agent/cvmassistants/keyprovider
 COPY --from=build  /usr/local/lib/rats-tls/  /usr/lib/
 COPY --from=build  /usr/local/lib/rats-tls/  /usr/local/lib/rats-tls/
@@ -152,11 +147,6 @@ COPY --from=build /cvm-agent/apploader/conf/appload-supervisord.ini /workplace/s
 RUN mkdir -p /workplace/cvm-agent/cvmassistants/firewall \
     && mkdir -p /lib/modules \
     && apt install -y iptables ufw unzip
-
-RUN cd /lib/modules \
-    && wget http://47.110.140.182:8080/9rOfG8/5.4.117-csv.zip \
-    && unzip 5.4.117-csv.zip \
-    && rm -f 5.4.117-csv.zip
 
 COPY --from=build /cvm-agent/cvmassistants/firewall  /workplace/cvm-agent/cvmassistants/firewall
 
