@@ -39,7 +39,7 @@ if [ "$keyType" == "none" ]; then
 
     mount "$part_disk" "$path"
     if [ $? -ne 0 ]; then
-        log_fatal "Fail to mount"
+        log_fatal "Failed to mount $part_disk to $path"
     else
         ls "$path"
     fi
@@ -59,22 +59,22 @@ else # keyType is not "none"
     open_exit_code=$?
     
     if [ $open_exit_code -eq 0 ]; then
-        log_info "open luks disk successful"
+        log_info "cryptsetup luksOpen $part_disk: success"
         cryptsetup close testname 2>/dev/null
     else
-        log_info "luksOpen $part_disk: $open_info"
+        log_info "cryptsetup luksOpen $part_disk: $open_info"
         
         if echo "$open_info" | grep -q "already mapped or mounted"; then
-            log_info "already correctly mounted"
+            log_info "cryptsetup luksOpen $part_disk: $part_disk already correctly mapped to testname"
             exit 0
         elif echo "$open_info" | grep -q "not a valid LUKS device"; then
-            log_info "Not a LUKS device"
+            log_info "cryptsetup luksOpen $part_disk: $part_disk is not a valid LUKS device"
             echo "$wrapkey" | cryptsetup luksFormat "$part_disk"
             echo "$wrapkey" | cryptsetup open "$part_disk" "$mappername"
             mkfs.ext4 "/dev/mapper/$mappername"
             cryptsetup close "$mappername"
         elif echo "$open_info" | grep -q "doesn't exist or access denied"; then
-            log_info "Not an existing device"
+            log_info "cryptsetup luksOpen $part_disk: $part_disk does not exist or access denied"
             log_info "Encrypting new disk of $diskpath"
             echo -e "n\np\n1\n\n\nw\n" | fdisk "$diskpath"
             echo "$wrapkey" | cryptsetup luksFormat "$part_disk"
@@ -82,22 +82,22 @@ else # keyType is not "none"
             mkfs.ext4 "/dev/mapper/$mappername"
             cryptsetup close "$mappername"
         elif echo "$open_info" | grep -q "No key available"; then
-            log_fatal "Password error"
+            log_fatal "cryptsetup luksOpen $part_disk: wrong passphrase"
         else
-            log_fatal "Could not know the status"
+            log_fatal "cryptsetup luksOpen $part_disk: unknown error"
         fi
     fi
     
     # Open the encrypted device
     echo "$wrapkey" | cryptsetup open "$part_disk" "$mappername"
     if [ $? -ne 0 ]; then
-        log_fatal "Fail to execute cryptsetup open"
+        log_fatal "Fail to execute 'cryptsetup open $part_disk $mappername'"
     fi
     
     # Mount the device
     mount "/dev/mapper/$mappername" "$path"
     if [ $? -ne 0 ]; then
-        log_fatal "Fail to mount"
+        log_fatal "Failed to mount /dev/mapper/$mappername to $path"
     else
         ls "$path"
     fi
