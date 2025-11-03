@@ -9,6 +9,26 @@ log_fatal() {
   exit 1
 }
 
+# Create a new partition on a disk
+# Arguments: disk_device
+create_partition() {
+  local disk_dev="$1"
+  echo -e "n\np\n1\n\n\nw\n" | fdisk "$disk_dev"
+}
+
+# Format and encrypt a partition
+# Arguments: key partition_device mapper_name
+format_and_encrypt_partition() {
+  local key="$1"
+  local part_dev="$2"
+  local mapper="$3"
+  
+  echo "$key" | cryptsetup luksFormat "$part_dev"
+  echo "$key" | cryptsetup open "$part_dev" "$mapper"
+  mkfs.ext4 "/dev/mapper/$mapper"
+  cryptsetup close "$mapper"
+}
+
 log_info "Starting encrypted disk configuration..."
 
 # Check required environment variables
@@ -33,7 +53,7 @@ if [ "$keyType" == "none" ]; then
 
     # this is a new disk, need to partition first
     if [ ! -e "$part_disk" ]; then
-        echo -e "n\np\n1\n\n\nw\n" | fdisk "$diskpath"
+        create_partition "$diskpath"
         mkfs.ext4 "$part_disk"
     fi
 
@@ -69,18 +89,12 @@ else # keyType is not "none"
             exit 0
         elif echo "$open_info" | grep -q "not a valid LUKS device"; then
             log_info "cryptsetup luksOpen $part_disk: $part_disk is not a valid LUKS device"
-            echo "$wrapkey" | cryptsetup luksFormat "$part_disk"
-            echo "$wrapkey" | cryptsetup open "$part_disk" "$mappername"
-            mkfs.ext4 "/dev/mapper/$mappername"
-            cryptsetup close "$mappername"
+            format_and_encrypt_partition "$wrapkey" "$part_disk" "$mappername"
         elif echo "$open_info" | grep -q "doesn't exist or access denied"; then
             log_info "cryptsetup luksOpen $part_disk: $part_disk does not exist or access denied"
             log_info "Encrypting new disk of $diskpath"
-            echo -e "n\np\n1\n\n\nw\n" | fdisk "$diskpath"
-            echo "$wrapkey" | cryptsetup luksFormat "$part_disk"
-            echo "$wrapkey" | cryptsetup open "$part_disk" "$mappername"
-            mkfs.ext4 "/dev/mapper/$mappername"
-            cryptsetup close "$mappername"
+            create_partition "$diskpath"
+            format_and_encrypt_partition "$wrapkey" "$part_disk" "$mappername"
         elif echo "$open_info" | grep -q "No key available"; then
             log_fatal "cryptsetup luksOpen $part_disk: wrong passphrase"
         else
