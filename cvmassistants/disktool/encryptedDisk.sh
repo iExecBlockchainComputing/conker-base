@@ -13,7 +13,17 @@ log_fatal() {
 # Arguments: disk_device
 create_partition() {
   local disk_dev="$1"
+  log_info "Creating partition on $disk_dev with the following passed fdisk parameters:
+  n = new partition
+  p = primary partition
+  1 = partition number 1
+  <Enter><Enter> = default start and end sectors
+  w = write changes"
   echo -e "n\np\n1\n\n\nw\n" | fdisk "$disk_dev"
+  if [ $? -ne 0 ]; then
+    log_fatal "Failed to create partition on $disk_dev"
+  fi
+  log_info "Partition created successfully on $disk_dev"
 }
 
 # Format and encrypt a partition
@@ -24,9 +34,28 @@ format_and_encrypt_partition() {
   local mapper="$3"
   
   echo "$key" | cryptsetup luksFormat "$part_dev"
+  if [ $? -ne 0 ]; then
+    log_fatal "Failed to format partition $part_dev in luks format"
+  fi
+  log_info "Partition $part_dev formatted successfully in luks format"
+
   echo "$key" | cryptsetup open "$part_dev" "$mapper"
+  if [ $? -ne 0 ]; then
+    log_fatal "Failed to open partition $part_dev in luks format"
+  fi
+  log_info "Partition $part_dev opened successfully in luks format"
+
   mkfs.ext4 "/dev/mapper/$mapper"
+  if [ $? -ne 0 ]; then
+    log_fatal "Failed to format partition /dev/mapper/$mapper in ext4 format"
+  fi
+  log_info "Partition /dev/mapper/$mapper successfully formatted in ext4 format"
+  
   cryptsetup close "$mapper"
+  if [ $? -ne 0 ]; then
+    log_fatal "Failed to close partition /dev/mapper/$mapper"
+  fi
+  log_info "Partition /dev/mapper/$mapper closed successfully"
 }
 
 log_info "Starting encrypted disk configuration..."
