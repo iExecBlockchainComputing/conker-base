@@ -9,6 +9,8 @@ log_fatal() {
   exit 1
 }
 
+log_info "Starting encrypted disk configuration..."
+
 # Check required environment variables
 if [ -z "$path" ]; then # /workplace/encryptedData/ 
     log_fatal "Mount directory is null"
@@ -102,3 +104,5 @@ else # keyType is not "none"
 fi
 
 log_info "Mount directory is $path"
+
+log_info "Encrypted disk configuration completed."
