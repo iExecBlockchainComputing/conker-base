@@ -98,8 +98,6 @@ if [ "$keyType" == "none" ]; then
         log_fatal "Failed to mount $part_disk to $path"
     fi
     log_info "Mounted $part_disk to $path"
-    log_info "List contents of $path"
-    ls "$path"
     
 else # keyType is NOT "none"
     log_info "Handling encrypted disk case"
@@ -156,10 +154,10 @@ else # keyType is NOT "none"
         log_fatal "Failed to mount /dev/mapper/$mappername to $path"
     fi
     log_info "Mounted /dev/mapper/$mappername to $path"
-    log_info "List contents of $path"
-    ls "$path"
 fi
 
 log_info "Mount directory is $path"
+log_info "List contents of $path"
+ls "$path"
 
 log_info "Encrypted disk configuration completed."
