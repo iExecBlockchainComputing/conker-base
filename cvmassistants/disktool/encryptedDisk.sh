@@ -107,7 +107,7 @@ if [ "$keyType" == "none" ]; then
     fi
 
     device_to_mount="$part_disk"
-    
+
 else # keyType is NOT "none"
     log_info "Handling encrypted disk case"
     if [ -z "$wrapkey" ]; then
@@ -121,7 +121,7 @@ else # keyType is NOT "none"
         log_info "Created mount directory $path"
     fi
 
-    # Try to open LUKS device to check status
+    # Try to open LUKS device on "testname" to anticipate errors
     open_info=$(echo "$wrapkey" | cryptsetup open "$part_disk" testname 2>&1)
     open_exit_code=$?
     
@@ -146,7 +146,7 @@ else # keyType is NOT "none"
         elif echo "$open_info" | grep -q "No key available"; then
             log_fatal "cryptsetup open $part_disk testname: wrong passphrase"
         else
-            log_fatal "cryptsetup open $part_disk: unknown error"
+            log_fatal "cryptsetup open $part_disk testname: unknown error"
         fi
     fi
     
@@ -161,6 +161,7 @@ else # keyType is NOT "none"
 fi
 
 # Mount the device
+log_info "Device to mount is $device_to_mount"
 mount_device "$device_to_mount" "$path"
 
 log_info "Mount directory is $path"
