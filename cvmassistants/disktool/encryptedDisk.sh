@@ -106,7 +106,7 @@ if [ "$keyType" == "none" ]; then
         log_info "Formatted partition $part_disk in ext4 format"
     fi
 
-    mount_device "$part_disk" "$path"
+    device_to_mount="$part_disk"
     
 else # keyType is NOT "none"
     log_info "Handling encrypted disk case"
@@ -157,9 +157,11 @@ else # keyType is NOT "none"
     fi
     log_info "cryptsetup open $part_disk $mappername: success"
     
-    # Mount the device
-    mount_device "/dev/mapper/$mappername" "$path"
+    device_to_mount="/dev/mapper/$mappername"
 fi
+
+# Mount the device
+mount_device "$device_to_mount" "$path"
 
 log_info "Mount directory is $path"
 log_info "List contents of $path"
