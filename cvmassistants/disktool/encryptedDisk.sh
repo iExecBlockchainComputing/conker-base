@@ -124,7 +124,7 @@ if [ "$keyType" == "none" ]; then
 
     device_to_mount="$part_disk"
 
-else # keyType is NOT "none"
+else # keyType is NOT "none" (wrapkey)
     log_info "Handling encrypted disk case"
     if [ -z "$wrapkey" ]; then
         log_fatal "wrapkey is null"
