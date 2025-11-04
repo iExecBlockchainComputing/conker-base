@@ -58,6 +58,19 @@ format_and_encrypt_partition() {
   log_info "Partition /dev/mapper/$mapper closed successfully"
 }
 
+# Mount a device to a mount point
+# Arguments: device_path mount_point
+mount_device() {
+  local device="$1"
+  local mount_point="$2"
+  
+  mount "$device" "$mount_point"
+  if [ $? -ne 0 ]; then
+    log_fatal "Failed to mount $device to $mount_point"
+  fi
+  log_info "Mounted $device to $mount_point"
+}
+
 log_info "Starting encrypted disk configuration..."
 
 # Check required environment variables
@@ -93,11 +106,7 @@ if [ "$keyType" == "none" ]; then
         log_info "Formatted partition $part_disk in ext4 format"
     fi
 
-    mount "$part_disk" "$path"
-    if [ $? -ne 0 ]; then
-        log_fatal "Failed to mount $part_disk to $path"
-    fi
-    log_info "Mounted $part_disk to $path"
+    mount_device "$part_disk" "$path"
     
 else # keyType is NOT "none"
     log_info "Handling encrypted disk case"
@@ -149,11 +158,7 @@ else # keyType is NOT "none"
     log_info "cryptsetup open $part_disk $mappername: success"
     
     # Mount the device
-    mount "/dev/mapper/$mappername" "$path"
-    if [ $? -ne 0 ]; then
-        log_fatal "Failed to mount /dev/mapper/$mappername to $path"
-    fi
-    log_info "Mounted /dev/mapper/$mappername to $path"
+    mount_device "/dev/mapper/$mappername" "$path"
 fi
 
 log_info "Mount directory is $path"
