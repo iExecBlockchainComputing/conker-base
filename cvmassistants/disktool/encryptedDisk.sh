@@ -74,33 +74,44 @@ part_disk="${diskpath}1" # /dev/vda1
 
 # Handle unencrypted disk case
 if [ "$keyType" == "none" ]; then
+    log_info "Handling unencrypted disk case"
     if [ ! -d "$path" ]; then
+        log_info "Mount directory $path does not exist"
         mkdir -p "$path"
+        log_info "Created mount directory $path"
     else
         umount "$path" 2>/dev/null
+        log_info "Unmounted $path"
     fi
 
     # this is a new disk, need to partition first
     if [ ! -e "$part_disk" ]; then
+        log_info "Partition $part_disk does not exist"
         create_partition "$diskpath"
+        log_info "Created partition $part_disk"
         mkfs.ext4 "$part_disk"
+        log_info "Formatted partition $part_disk in ext4 format"
     fi
 
     mount "$part_disk" "$path"
     if [ $? -ne 0 ]; then
         log_fatal "Failed to mount $part_disk to $path"
-    else
-        ls "$path"
     fi
-else # keyType is not "none"
+    log_info "Mounted $part_disk to $path"
+    log_info "List contents of $path"
+    ls "$path"
+    
+else # keyType is NOT "none"
+    log_info "Handling encrypted disk case"
     if [ -z "$wrapkey" ]; then
         log_fatal "wrapkey is null"
     fi
-    log_info "Mount directory is $path"
 
     mappername="${disk}1"
     if [ ! -d "$path" ]; then
+        log_info "Mount directory $path does not exist"
         mkdir -p "$path"
+        log_info "Created mount directory $path"
     fi
 
     # Try to open LUKS device to check status
@@ -108,24 +119,25 @@ else # keyType is not "none"
     open_exit_code=$?
     
     if [ $open_exit_code -eq 0 ]; then
-        log_info "cryptsetup luksOpen $part_disk: success"
+        log_info "cryptsetup luksOpen $part_disk testname: success"
         cryptsetup close testname 2>/dev/null
+        log_info "cryptsetup closed testname: success"
     else
-        log_info "cryptsetup luksOpen $part_disk: $open_info"
+        log_info "cryptsetup luksOpen $part_disk testname: $open_info"
         
         if echo "$open_info" | grep -q "already mapped or mounted"; then
-            log_info "cryptsetup luksOpen $part_disk: $part_disk already correctly mapped to testname"
+            log_info "cryptsetup luksOpen $part_disk testname: $part_disk already correctly mapped to testname"
             exit 0
         elif echo "$open_info" | grep -q "not a valid LUKS device"; then
-            log_info "cryptsetup luksOpen $part_disk: $part_disk is not a valid LUKS device"
+            log_info "cryptsetup luksOpen $part_disk testname: $part_disk is not a valid LUKS device"
             format_and_encrypt_partition "$wrapkey" "$part_disk" "$mappername"
         elif echo "$open_info" | grep -q "doesn't exist or access denied"; then
-            log_info "cryptsetup luksOpen $part_disk: $part_disk does not exist or access denied"
+            log_info "cryptsetup luksOpen $part_disk testname: $part_disk does not exist or access denied"
             log_info "Encrypting new disk of $diskpath"
             create_partition "$diskpath"
             format_and_encrypt_partition "$wrapkey" "$part_disk" "$mappername"
         elif echo "$open_info" | grep -q "No key available"; then
-            log_fatal "cryptsetup luksOpen $part_disk: wrong passphrase"
+            log_fatal "cryptsetup luksOpen $part_disk testname: wrong passphrase"
         else
             log_fatal "cryptsetup luksOpen $part_disk: unknown error"
         fi
@@ -134,16 +146,18 @@ else # keyType is not "none"
     # Open the encrypted device
     echo "$wrapkey" | cryptsetup open "$part_disk" "$mappername"
     if [ $? -ne 0 ]; then
-        log_fatal "Fail to execute 'cryptsetup open $part_disk $mappername'"
+        log_fatal "cryptsetup open $part_disk $mappername: failed"
     fi
+    log_info "cryptsetup open $part_disk $mappername: success"
     
     # Mount the device
     mount "/dev/mapper/$mappername" "$path"
     if [ $? -ne 0 ]; then
         log_fatal "Failed to mount /dev/mapper/$mappername to $path"
-    else
-        ls "$path"
     fi
+    log_info "Mounted /dev/mapper/$mappername to $path"
+    log_info "List contents of $path"
+    ls "$path"
 fi
 
 log_info "Mount directory is $path"
