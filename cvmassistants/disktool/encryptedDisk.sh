@@ -113,31 +113,31 @@ else # keyType is NOT "none"
     fi
 
     # Try to open LUKS device to check status
-    open_info=$(echo "$wrapkey" | cryptsetup luksOpen "$part_disk" testname 2>&1)
+    open_info=$(echo "$wrapkey" | cryptsetup open "$part_disk" testname 2>&1)
     open_exit_code=$?
     
     if [ $open_exit_code -eq 0 ]; then
-        log_info "cryptsetup luksOpen $part_disk testname: success"
+        log_info "cryptsetup open $part_disk testname: success"
         cryptsetup close testname 2>/dev/null
         log_info "cryptsetup closed testname: success"
     else
-        log_info "cryptsetup luksOpen $part_disk testname: $open_info"
+        log_info "cryptsetup open $part_disk testname: $open_info"
         
         if echo "$open_info" | grep -q "already mapped or mounted"; then
-            log_info "cryptsetup luksOpen $part_disk testname: $part_disk already correctly mapped to testname"
+            log_info "cryptsetup open $part_disk testname: $part_disk already correctly mapped to testname"
             exit 0
         elif echo "$open_info" | grep -q "not a valid LUKS device"; then
-            log_info "cryptsetup luksOpen $part_disk testname: $part_disk is not a valid LUKS device"
+            log_info "cryptsetup open $part_disk testname: $part_disk is not a valid LUKS device"
             format_and_encrypt_partition "$wrapkey" "$part_disk" "$mappername"
         elif echo "$open_info" | grep -q "doesn't exist or access denied"; then
-            log_info "cryptsetup luksOpen $part_disk testname: $part_disk does not exist or access denied"
+            log_info "cryptsetup open $part_disk testname: $part_disk does not exist or access denied"
             log_info "Encrypting new disk of $diskpath"
             create_partition "$diskpath"
             format_and_encrypt_partition "$wrapkey" "$part_disk" "$mappername"
         elif echo "$open_info" | grep -q "No key available"; then
-            log_fatal "cryptsetup luksOpen $part_disk testname: wrong passphrase"
+            log_fatal "cryptsetup open $part_disk testname: wrong passphrase"
         else
-            log_fatal "cryptsetup luksOpen $part_disk: unknown error"
+            log_fatal "cryptsetup open $part_disk: unknown error"
         fi
     fi
     
