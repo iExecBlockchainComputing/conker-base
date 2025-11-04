@@ -1,4 +1,20 @@
-#!/bin/bash
+#!/usr/bin/env bash
+###############################################################################
+# Script: encryptedDisk.sh
+# Description: Configure encrypted or unencrypted disk partitions on Ubuntu systems (e.g., TDX environment)
+#
+# This script partitions, formats, and mounts disk devices. Supports both
+# encrypted (LUKS) and unencrypted disks. Environment variables control behavior:
+# `path` (mount point), `disk` (device name), `keyType` (encryption type),
+# and `wrapkey` (encryption key when keyType is not "none").
+#
+# Requirements:
+#   - Must be run as root
+#   - cryptsetup must be installed (for encrypted disks)
+#   - fdisk must be installed
+#   - mkfs.ext4 must be available
+#
+###############################################################################
 
 log_info() {
   echo -e "[INFO] $*"
