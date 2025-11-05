@@ -179,13 +179,13 @@ else # keyType is NOT "none" (wrapkey)
     else
         log_info "cryptsetup open $part_disk testname: $open_info"
         
-        if echo "$open_info" | grep -q "already exists"; then
+        if echo "$open_info" | grep -qi "already exists"; then
             log_info "cryptsetup open $part_disk testname: $part_disk already correctly mapped to testname"
             exit 0
-        elif echo "$open_info" | grep -q "not a valid LUKS device"; then
+        elif echo "$open_info" | grep -qi "not a valid LUKS device"; then
             log_info "cryptsetup open $part_disk testname: $part_disk is not a valid LUKS device"
             format_and_encrypt_partition "$wrapkey" "$part_disk" "$mappername"
-        elif echo "$open_info" | grep -q "No key available"; then
+        elif echo "$open_info" | grep -qi "No key available"; then
             log_fatal "cryptsetup open $part_disk testname: wrong passphrase"
         else
             log_fatal "cryptsetup open $part_disk testname: unknown error"
