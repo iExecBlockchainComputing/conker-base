@@ -71,9 +71,7 @@ detect_or_create_partition() {
     [[ -e "$part_disk" ]] && break
   done
 
-  if [[ ! -e "$part_disk" ]]; then
-    log_fatal "Failed to create partition on $disk_dev — no partition device detected after fdisk"
-  fi
+  [[ -e "$part_disk" ]] || log_fatal "Failed to create partition on $disk_dev — no partition device detected after fdisk"
   log_info "Partition $part_disk successfully created on $disk_dev"
   return 0
 }
@@ -86,27 +84,19 @@ format_and_encrypt_partition() {
   local mapper="$3"
   
   echo "$key" | cryptsetup luksFormat "$part_dev"
-  if [ $? -ne 0 ]; then
-    log_fatal "Failed to format partition $part_dev in luks format"
-  fi
+  [[ $? -ne 0 ]] && log_fatal "Failed to format partition $part_dev in luks format"
   log_info "Partition $part_dev formatted successfully in luks format"
 
   echo "$key" | cryptsetup open "$part_dev" "$mapper"
-  if [ $? -ne 0 ]; then
-    log_fatal "Failed to open partition $part_dev in luks format"
-  fi
+  [[ $? -ne 0 ]] && log_fatal "Failed to open partition $part_dev in luks format"
   log_info "Partition $part_dev opened successfully in luks format"
 
   mkfs.ext4 "/dev/mapper/$mapper"
-  if [ $? -ne 0 ]; then
-    log_fatal "Failed to format partition /dev/mapper/$mapper in ext4 format"
-  fi
+  [[ $? -ne 0 ]] && log_fatal "Failed to format partition /dev/mapper/$mapper in ext4 format"
   log_info "Partition /dev/mapper/$mapper successfully formatted in ext4 format"
   
   cryptsetup close "$mapper"
-  if [ $? -ne 0 ]; then
-    log_fatal "Failed to close partition /dev/mapper/$mapper"
-  fi
+  [[ $? -ne 0 ]] && log_fatal "Failed to close partition /dev/mapper/$mapper"
   log_info "Partition /dev/mapper/$mapper closed successfully"
 }
 
@@ -117,22 +107,15 @@ mount_device() {
   local mount_point="$2"
   
   mount "$device" "$mount_point"
-  if [ $? -ne 0 ]; then
-    log_fatal "Failed to mount $device to $mount_point"
-  fi
+  [[ $? -ne 0 ]] && log_fatal "Failed to mount $device to $mount_point"
   log_info "Mounted $device to $mount_point"
 }
 
 log_info "Starting encrypted disk configuration..."
 
 # Check required environment variables
-if [ -z "$path" ]; then # /workplace/encryptedData/ 
-    log_fatal "Mount directory is null"
-fi
-
-if [ -z "$disk" ]; then # vda
-    log_fatal "Disk dev name is null"
-fi
+[[ -z "$path" ]] && log_fatal "Mount directory is null"
+[[ -z "$disk" ]] && log_fatal "Disk dev name is null"
 
 diskpath="/dev/$disk" # /dev/vda
 part_disk=""
@@ -143,29 +126,23 @@ if [ "$keyType" == "none" ]; then
     log_info "Handling unencrypted disk case"
     if [ ! -d "$path" ]; then
         log_info "Mount directory $path does not exist"
-        mkdir -p "$path"
-        log_info "Created mount directory $path"
+        mkdir -p "$path" && log_info "Created mount directory $path"
     else
-        umount "$path" 2>/dev/null
-        log_info "Unmounted $path"
+        umount "$path" 2>/dev/null && log_info "Unmounted $path"
     fi
 
     # this is a new disk, need to partition first
-    mkfs.ext4 "$part_disk"
-    log_info "Formatted partition $part_disk in ext4 format"
+    mkfs.ext4 "$part_disk" && log_info "Formatted partition $part_disk in ext4 format"
     device_to_mount="$part_disk"
 
 else # keyType is NOT "none" (wrapkey)
     log_info "Handling encrypted disk case"
-    if [ -z "$wrapkey" ]; then
-        log_fatal "wrapkey is null"
-    fi
+    [[ -z "$wrapkey" ]] && log_fatal "wrapkey is null"
 
     mappername="${disk}1"
     if [ ! -d "$path" ]; then
         log_info "Mount directory $path does not exist"
-        mkdir -p "$path"
-        log_info "Created mount directory $path"
+        mkdir -p "$path" && log_info "Created mount directory $path"
     fi
 
     # Try to open LUKS device on "testname" to anticipate errors
@@ -174,8 +151,7 @@ else # keyType is NOT "none" (wrapkey)
     
     if [ $open_exit_code -eq 0 ]; then
         log_info "cryptsetup open $part_disk testname: success"
-        cryptsetup close testname 2>/dev/null
-        log_info "cryptsetup closed testname: success"
+        cryptsetup close testname 2>/dev/null && log_info "cryptsetup closed testname: success"
     else
         log_info "cryptsetup open $part_disk testname: $open_info"
         
@@ -194,9 +170,7 @@ else # keyType is NOT "none" (wrapkey)
     
     # Open the encrypted device
     echo "$wrapkey" | cryptsetup open "$part_disk" "$mappername"
-    if [ $? -ne 0 ]; then
-        log_fatal "cryptsetup open $part_disk $mappername: failed"
-    fi
+    [[ $? -ne 0 ]] && log_fatal "cryptsetup open $part_disk $mappername: failed"
     log_info "cryptsetup open $part_disk $mappername: success"
     
     device_to_mount="/dev/mapper/$mappername"
