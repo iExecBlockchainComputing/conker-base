@@ -27,19 +27,55 @@ log_fatal() {
 
 # Create a new partition on a disk
 # Arguments: disk_device
-create_partition() {
+detect_or_create_partition() {
   local disk_dev="$1"
-  log_info "Creating partition on $disk_dev with the following passed fdisk parameters:
-  n = new partition
-  p = primary partition
-  1 = partition number 1
-  <Enter><Enter> = default start and end sectors
-  w = write changes"
-  echo -e "n\np\n1\n\n\nw\n" | fdisk "$disk_dev"
-  if [ $? -ne 0 ]; then
-    log_fatal "Failed to create partition on $disk_dev"
+  local suffix
+
+  # Try both possible partition naming schemes (e.g., /dev/sda1 or /dev/nvme0n1p1)
+  part_disk=""
+  for suffix in 1 p1; do
+    if [[ -e "${disk_dev}${suffix}" ]]; then
+      part_disk="${disk_dev}${suffix}"
+      break
+    fi
+  done
+
+  if [[ -n "$part_disk" ]]; then
+    log_info "Partition $part_disk already exists for device $disk_dev"
+    return 0
   fi
-  log_info "Partition created successfully on $disk_dev"
+
+  log_info "Creating partition on $disk_dev with the following passed fdisk parameters: 
+  n = new partition 
+  p = primary partition 
+  1 = partition number 1 
+  <Enter><Enter> = default start and end sectors 
+  w = write changes"
+  # Create the partition using fdisk
+  # fdisk may return non-zero due to partition table re-read warning, but partition is created
+  echo -e "n\np\n1\n\n\nw\n" | fdisk "$disk_dev" >/dev/null 2>&1 || true
+
+  # Force kernel to re-read the partition table
+  if command -v partprobe >/dev/null 2>&1; then
+    partprobe "$disk_dev" >/dev/null 2>&1 || log_fatal "partprobe failed on $disk_dev"
+  elif command -v partx >/dev/null 2>&1; then
+    partx -u "$disk_dev" >/dev/null 2>&1 || log_fatal "partx failed on $disk_dev"
+  fi
+
+  # Wait a moment for partition to appear
+  sleep 1
+
+  # Try both possible partition naming schemes
+  for suffix in "1" "p1"; do
+    part_disk="${disk_dev}${suffix}"
+    [[ -e "$part_disk" ]] && break
+  done
+
+  if [[ ! -e "$part_disk" ]]; then
+    log_fatal "Failed to create partition on $disk_dev — no partition device detected after fdisk"
+  fi
+  log_info "Partition $part_disk successfully created on $disk_dev"
+  return 0
 }
 
 # Format and encrypt a partition
@@ -99,7 +135,8 @@ if [ -z "$disk" ]; then # vda
 fi
 
 diskpath="/dev/$disk" # /dev/vda
-part_disk="${diskpath}1" # /dev/vda1
+part_disk=""
+detect_or_create_partition "$diskpath" # assign part_disk
 
 # Handle unencrypted disk case
 if [ "$keyType" == "none" ]; then
@@ -114,14 +151,8 @@ if [ "$keyType" == "none" ]; then
     fi
 
     # this is a new disk, need to partition first
-    if [ ! -e "$part_disk" ]; then
-        log_info "Partition $part_disk does not exist"
-        create_partition "$diskpath"
-        log_info "Created partition $part_disk"
-        mkfs.ext4 "$part_disk"
-        log_info "Formatted partition $part_disk in ext4 format"
-    fi
-
+    mkfs.ext4 "$part_disk"
+    log_info "Formatted partition $part_disk in ext4 format"
     device_to_mount="$part_disk"
 
 else # keyType is NOT "none" (wrapkey)
@@ -148,16 +179,11 @@ else # keyType is NOT "none" (wrapkey)
     else
         log_info "cryptsetup open $part_disk testname: $open_info"
         
-        if echo "$open_info" | grep -q "already mapped or mounted"; then
+        if echo "$open_info" | grep -q "already exists"; then
             log_info "cryptsetup open $part_disk testname: $part_disk already correctly mapped to testname"
             exit 0
         elif echo "$open_info" | grep -q "not a valid LUKS device"; then
             log_info "cryptsetup open $part_disk testname: $part_disk is not a valid LUKS device"
-            format_and_encrypt_partition "$wrapkey" "$part_disk" "$mappername"
-        elif echo "$open_info" | grep -q "doesn't exist or access denied"; then
-            log_info "cryptsetup open $part_disk testname: $part_disk does not exist or access denied"
-            log_info "Encrypting new disk of $diskpath"
-            create_partition "$diskpath"
             format_and_encrypt_partition "$wrapkey" "$part_disk" "$mappername"
         elif echo "$open_info" | grep -q "No key available"; then
             log_fatal "cryptsetup open $part_disk testname: wrong passphrase"
