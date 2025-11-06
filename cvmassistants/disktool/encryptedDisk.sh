@@ -5,7 +5,7 @@
 #
 # This script partitions, formats, and mounts disk devices. Supports both
 # encrypted (LUKS) and unencrypted disks. Environment variables control behavior:
-# `path` (mount point), `disk` (device name), `keyType` (encryption type),
+# `mount_path` (mount point), `disk` (device name), `keyType` (encryption type),
 # and `wrapkey` (encryption key when keyType is not "none").
 #
 # Requirements:
@@ -114,7 +114,7 @@ mount_device() {
 log_info "Starting encrypted disk configuration..."
 
 # Check required environment variables
-[[ -z "$path" ]] && log_fatal "Mount directory is null"
+[[ -z "$mount_path" ]] && log_fatal "Mount directory is null"
 [[ -z "$disk" ]] && log_fatal "Disk dev name is null"
 
 diskpath="/dev/$disk" # /dev/vda
@@ -124,11 +124,11 @@ detect_or_create_partition "$diskpath" # assign part_disk
 # Handle unencrypted disk case
 if [ "$keyType" == "none" ]; then
     log_info "Handling unencrypted disk case"
-    if [ ! -d "$path" ]; then
-        log_info "Mount directory $path does not exist"
-        mkdir -p "$path" && log_info "Created mount directory $path"
+    if [ ! -d "$mount_path" ]; then
+        log_info "Mount directory $mount_path does not exist"
+        mkdir -p "$mount_path" && log_info "Created mount directory $mount_path"
     else
-        umount "$path" 2>/dev/null && log_info "Unmounted $path"
+        umount "$mount_path" 2>/dev/null && log_info "Unmounted $mount_path"
     fi
 
     # this is a new disk, need to partition first
@@ -140,9 +140,9 @@ else # keyType is NOT "none" (wrapkey)
     [[ -z "$wrapkey" ]] && log_fatal "wrapkey is null"
 
     mappername="${disk}1"
-    if [ ! -d "$path" ]; then
-        log_info "Mount directory $path does not exist"
-        mkdir -p "$path" && log_info "Created mount directory $path"
+    if [ ! -d "$mount_path" ]; then
+        log_info "Mount directory $mount_path does not exist"
+        mkdir -p "$mount_path" && log_info "Created mount directory $mount_path"
     fi
 
     # Try to open LUKS device on "testname" to anticipate errors
@@ -178,10 +178,10 @@ fi
 
 # Mount the device
 log_info "Device to mount is $device_to_mount"
-mount_device "$device_to_mount" "$path"
+mount_device "$device_to_mount" "$mount_path"
 
-log_info "Mount directory is $path"
-log_info "List contents of $path"
-ls "$path"
+log_info "Mount directory is $mount_path"
+log_info "List contents of $mount_path"
+ls "$mount_path"
 
 log_info "Encrypted disk configuration completed."
