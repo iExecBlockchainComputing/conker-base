@@ -36,14 +36,10 @@ detect_or_create_partition() {
   for suffix in 1 p1; do
     if [[ -e "${disk_dev}${suffix}" ]]; then
       part_disk="${disk_dev}${suffix}"
-      break
+      log_info "Partition $part_disk already exists for device $disk_dev"
+      return 0
     fi
   done
-
-  if [[ -n "$part_disk" ]]; then
-    log_info "Partition $part_disk already exists for device $disk_dev"
-    return 0
-  fi
 
   log_info "Creating partition on $disk_dev with the following passed fdisk parameters: 
   n = new partition 
