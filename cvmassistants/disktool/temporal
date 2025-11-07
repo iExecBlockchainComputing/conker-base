@@ -121,13 +121,19 @@ log_info "Handling encrypted disk case"
 diskpath="/dev/$disk" # /dev/vda
 part_disk=""
 mappername="${disk}1"
-[ -e "/dev/mapper/$mappername"  ] && log_fatal "Mapper /dev/mapper/$mappername already exists"
+[ -e /dev/mapper/"$mappername"  ] && log_fatal "Mapper $mappername already exists"
 detect_or_create_partition "$diskpath" # assign part_disk
 
 if [ ! -d "$mount_path" ]; then
     log_info "Mount directory $mount_path does not exist"
     mkdir -p "$mount_path" && log_info "Created mount directory $mount_path"
 fi
+
+format_and_encrypt_partition "$wrapkey" "$part_disk" "$mappername"
+# Open the encrypted device
+echo "$wrapkey" | cryptsetup open "$part_disk" "$mappername"
+[[ $? -ne 0 ]] && log_fatal "cryptsetup open $part_disk $mappername: failed"
+log_info "cryptsetup open $part_disk $mappername: success"
 
 # Try to open LUKS device on "testname" to anticipate errors
 open_info=$(echo "$wrapkey" | cryptsetup open "$part_disk" testname 2>&1)
