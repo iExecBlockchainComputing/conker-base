@@ -129,30 +129,10 @@ if [ ! -d "$mount_path" ]; then
     mkdir -p "$mount_path" && log_info "Created mount directory $mount_path"
 fi
 
-# Try to open LUKS device on "testname" to anticipate errors
-open_info=$(echo "$wrapkey" | cryptsetup open "$part_disk" testname 2>&1)
-open_exit_code=$?
+# Format and encrypt the partition (and check if it opens correctly)
+format_and_encrypt_partition "$wrapkey" "$part_disk" "$mappername"
 
-if [ $open_exit_code -eq 0 ]; then
-    log_info "cryptsetup open $part_disk testname: success"
-    cryptsetup close testname 2>/dev/null && log_info "cryptsetup closed testname: success"
-else
-    log_info "cryptsetup open $part_disk testname: $open_info"
-    
-    if echo "$open_info" | grep -qi "already exists"; then
-        log_info "cryptsetup open $part_disk testname: $part_disk already correctly mapped to testname"
-        exit 0
-    elif echo "$open_info" | grep -qi "not a valid LUKS device"; then
-        log_info "cryptsetup open $part_disk testname: $part_disk is not a valid LUKS device"
-        format_and_encrypt_partition "$wrapkey" "$part_disk" "$mappername"
-    elif echo "$open_info" | grep -qi "No key available"; then
-        log_fatal "cryptsetup open $part_disk testname: wrong passphrase"
-    else
-        log_fatal "cryptsetup open $part_disk testname: unknown error"
-    fi
-fi
-  
-# Open the encrypted device
+# Open the encrypted device in its mapper
 echo "$wrapkey" | cryptsetup open "$part_disk" "$mappername"
 [[ $? -ne 0 ]] && log_fatal "cryptsetup open $part_disk $mappername: failed"
 log_info "cryptsetup open $part_disk $mappername: success"
