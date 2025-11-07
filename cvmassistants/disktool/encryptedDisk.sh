@@ -118,18 +118,20 @@ log_info "Starting encrypted disk configuration..."
 log_info "Handling encrypted disk case"
 [[ -z "$wrapkey" ]] && log_fatal "wrapkey is null"
 
-diskpath="/dev/$disk" # /dev/vda
-part_disk=""
-mappername="${disk}1"
-[ -e "/dev/mapper/$mappername"  ] && log_fatal "Mapper /dev/mapper/$mappername already exists"
-detect_or_create_partition "$diskpath" # assign part_disk
-
 if [ ! -d "$mount_path" ]; then
     log_info "Mount directory $mount_path does not exist"
     mkdir -p "$mount_path" && log_info "Created mount directory $mount_path"
 else
     umount "$mount_path" 2>/dev/null && log_info "Unmounted $mount_path"
 fi
+
+diskpath="/dev/$disk" # /dev/vda
+part_disk=""
+mappername="${disk}1"
+device_to_mount="/dev/mapper/$mappername"
+[ -e "$device_to_mount"  ] && log_fatal "Mapper $device_to_mount already exists"
+
+detect_or_create_partition "$diskpath" # assign part_disk
 
 # Format and encrypt the partition (and check if it opens correctly)
 format_and_encrypt_partition "$wrapkey" "$part_disk" "$mappername"
@@ -139,13 +141,8 @@ echo "$wrapkey" | cryptsetup open "$part_disk" "$mappername"
 [[ $? -ne 0 ]] && log_fatal "cryptsetup open $part_disk $mappername: failed"
 log_info "cryptsetup open $part_disk $mappername: success"
 
-device_to_mount="/dev/mapper/$mappername"
-
 # Mount the device
-log_info "Device to mount is $device_to_mount"
-mount_device "$device_to_mount" "$mount_path"
-
-log_info "Mount directory is $mount_path"
+mount_device "$device_to_mount" "$mount_path" && log_info "Mounted $device_to_mount to $mount_path"
 log_info "List contents of $mount_path"
 ls "$mount_path"
 
