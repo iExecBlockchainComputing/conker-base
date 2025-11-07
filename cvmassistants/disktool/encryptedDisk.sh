@@ -127,6 +127,8 @@ detect_or_create_partition "$diskpath" # assign part_disk
 if [ ! -d "$mount_path" ]; then
     log_info "Mount directory $mount_path does not exist"
     mkdir -p "$mount_path" && log_info "Created mount directory $mount_path"
+else
+    umount "$mount_path" 2>/dev/null && log_info "Unmounted $mount_path"
 fi
 
 # Format and encrypt the partition (and check if it opens correctly)
