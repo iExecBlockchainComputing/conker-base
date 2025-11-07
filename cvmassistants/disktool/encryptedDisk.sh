@@ -5,8 +5,8 @@
 #
 # This script partitions, formats, and mounts disk devices. Supports both
 # encrypted (LUKS) and unencrypted disks. Environment variables control behavior:
-# `mount_path` (mount point), `disk` (device name), `keyType` (encryption type),
-# and `wrapkey` (encryption key when keyType is not "none").
+# `mount_path` (mount point), `disk` (device name), `keyType` (only wrapkey supported),
+# and `wrapkey` (encryption key).
 #
 # Requirements:
 #   - Must be run as root
