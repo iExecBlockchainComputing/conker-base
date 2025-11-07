@@ -112,16 +112,15 @@ log_info "Starting encrypted disk configuration..."
 # Check required environment variables
 [[ -z "$mount_path" ]] && log_fatal "Mount directory is null"
 [[ -z "$disk" ]] && log_fatal "Disk dev name is null"
-
-diskpath="/dev/$disk" # /dev/vda
-part_disk=""
-detect_or_create_partition "$diskpath" # assign part_disk
-
 # Handle only encrypted disk case
 [ "$keyType" != "wrapkey" ] && log_fatal "keyType $keyType is not supported"
 
 log_info "Handling encrypted disk case"
 [[ -z "$wrapkey" ]] && log_fatal "wrapkey is null"
+
+diskpath="/dev/$disk" # /dev/vda
+part_disk=""
+detect_or_create_partition "$diskpath" # assign part_disk
 
 mappername="${disk}1"
 if [ ! -d "$mount_path" ]; then
