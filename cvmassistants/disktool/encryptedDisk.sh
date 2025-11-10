@@ -82,11 +82,11 @@ format_and_encrypt_partition() {
   local part_dev="$2"
   local mapper="$3"
   
-  echo "$key" | cryptsetup luksFormat "$part_dev"
+  echo "$key" | cryptsetup luksFormat --key-file=- "$part_dev"
   [[ $? -ne 0 ]] && log_fatal "Failed to format partition $part_dev in luks format"
   log_info "Partition $part_dev formatted successfully in luks format"
 
-  echo "$key" | cryptsetup open "$part_dev" "$mapper"
+  echo "$key" | cryptsetup open --key-file=- "$part_dev" "$mapper"
   [[ $? -ne 0 ]] && log_fatal "Failed to open partition $part_dev in luks format"
   log_info "Partition $part_dev opened successfully in luks format"
 
@@ -140,9 +140,9 @@ device_to_mount="/dev/mapper/$mappername"
 format_and_encrypt_partition "$wrapkey" "$part_disk" "$mappername"
 
 # Open the encrypted device in its mapper
-echo "$wrapkey" | cryptsetup open "$part_disk" "$mappername"
-[[ $? -ne 0 ]] && log_fatal "cryptsetup open $part_disk $mappername: failed"
-log_info "cryptsetup open $part_disk $mappername: success"
+echo "$wrapkey" | cryptsetup open --key-file=- "$part_disk" "$mappername"
+[[ $? -ne 0 ]] && log_fatal "cryptsetup open --key-file=- "$part_disk" "$mappername": failed"
+log_info "cryptsetup open --key-file=- "$part_disk" "$mappername": success"
 
 # Mount the device
 mount_device "$device_to_mount" "$mount_path" && log_info "Mounted $device_to_mount to $mount_path"
