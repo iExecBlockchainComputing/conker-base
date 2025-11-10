@@ -66,13 +66,12 @@ detect_or_create_partition() {
     part_disk="${disk_dev}${suffix}"
     if [[ -e "$part_disk" ]]; then 
       mappername="${mappername}${suffix}"
-      break
+      log_info "Partition $part_disk successfully created on $disk_dev"
+      return 0
     fi
   done
 
-  [[ -e "$part_disk" ]] || log_fatal "Failed to create partition on $disk_dev — no partition device detected after fdisk"
-  log_info "Partition $part_disk successfully created on $disk_dev"
-  return 0
+  log_fatal "Failed to create partition on $disk_dev — no partition device detected after fdisk"
 }
 
 # Format and encrypt a partition
