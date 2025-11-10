@@ -130,11 +130,11 @@ fi
 
 diskpath="/dev/$disk" # /dev/vda
 part_disk=""
-[ -e "$device_to_mount"  ] && log_fatal "Mapper $device_to_mount already exists"
 
 mappername="${disk}"
-detect_or_create_partition "$diskpath" # assign part_disk
+detect_or_create_partition "$diskpath" # assign part_disk and mappername
 device_to_mount="/dev/mapper/$mappername"
+[ -e "$device_to_mount"  ] && log_fatal "Mapper $device_to_mount already exists"
 
 # Format and encrypt the partition (and check if it opens correctly)
 format_and_encrypt_partition "$wrapkey" "$part_disk" "$mappername"
