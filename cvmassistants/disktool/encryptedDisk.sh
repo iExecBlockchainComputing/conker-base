@@ -64,10 +64,7 @@ detect_or_create_partition() {
   # Try both possible partition naming schemes
   for suffix in "1" "p1"; do
     part_disk="${disk_dev}${suffix}"
-    if [[ -e "$part_disk" ]]; then
-      mappername="${mappername}${suffix}"
-      break
-    fi
+    [[ -e "$part_disk" ]] && break
   done
 
   [[ -e "$part_disk" ]] || log_fatal "Failed to create partition on $disk_dev — no partition device detected after fdisk"
@@ -130,11 +127,11 @@ fi
 
 diskpath="/dev/$disk" # /dev/vda
 part_disk=""
-mappername="${disk}"
+mappername="${disk}1"
+device_to_mount="/dev/mapper/$mappername"
 [ -e "$device_to_mount"  ] && log_fatal "Mapper $device_to_mount already exists"
 
-detect_or_create_partition "$diskpath" # assign part_disk and mappername
-device_to_mount="/dev/mapper/$mappername"
+detect_or_create_partition "$diskpath" # assign part_disk
 
 # Format and encrypt the partition (and check if it opens correctly)
 format_and_encrypt_partition "$wrapkey" "$part_disk" "$mappername"
