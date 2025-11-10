@@ -146,7 +146,5 @@ log_info "cryptsetup open --key-file=- "$part_disk" "$mappername": success"
 
 # Mount the device
 mount_device "$device_to_mount" "$mount_path" && log_info "Mounted $device_to_mount to $mount_path"
-log_info "List contents of $mount_path"
-ls "$mount_path"
 
 log_info "Encrypted disk configuration completed."
