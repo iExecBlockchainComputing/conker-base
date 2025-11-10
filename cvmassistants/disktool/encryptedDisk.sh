@@ -33,7 +33,7 @@ detect_or_create_partition() {
 
   # Try both possible partition naming schemes (e.g., /dev/sda1 or /dev/nvme0n1p1)
   part_disk=""
-  for suffix in 1 p1; do
+  for suffix in "1" "p1"; do
     if [[ -e "${disk_dev}${suffix}" ]]; then
       part_disk="${disk_dev}${suffix}"
       mappername="${mappername}${suffix}"
