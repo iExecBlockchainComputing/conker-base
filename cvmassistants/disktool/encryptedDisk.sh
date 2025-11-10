@@ -36,6 +36,7 @@ detect_or_create_partition() {
   for suffix in 1 p1; do
     if [[ -e "${disk_dev}${suffix}" ]]; then
       part_disk="${disk_dev}${suffix}"
+      mappername="${mappername}${suffix}"
       log_info "Partition $part_disk already exists for device $disk_dev"
       return 0
     fi
