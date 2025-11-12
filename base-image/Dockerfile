@@ -1,4 +1,4 @@
-FROM ubuntu:20.04 AS build
+FROM ubuntu:24.04 AS build
 
 RUN apt-get update \
     && env DEBIAN_FRONTEND=noninteractive apt-get install -y \
@@ -33,16 +33,16 @@ RUN apt-get install -y \
     libcurl4-openssl-dev \
     libcbor-dev
 
-#  RA-TLS DCAP libraries:
-RUN echo 'deb [arch=amd64] https://download.01.org/intel-sgx/sgx_repo/ubuntu focal main' | tee /etc/apt/sources.list.d/intel-sgx.list > /dev/null \
-    && wget -O - https://download.01.org/intel-sgx/sgx_repo/ubuntu/intel-sgx-deb.key | apt-key add -\
+# RA-TLS DCAP libraries
+# https://download.01.org/intel-sgx/sgx_repo/ubuntu/dists/noble/main/binary-amd64/Packages
+RUN echo 'deb [signed-by=/etc/apt/keyrings/intel-sgx-keyring.asc arch=amd64] https://download.01.org/intel-sgx/sgx_repo/ubuntu noble main' | tee /etc/apt/sources.list.d/intel-sgx.list \
+    && wget https://download.01.org/intel-sgx/sgx_repo/ubuntu/intel-sgx-deb.key -O /etc/apt/keyrings/intel-sgx-keyring.asc \
     && apt-get update \
     && apt-get install -y \
     libsgx-dcap-quote-verify-dev \
     libsgx-dcap-ql-dev \
     libsgx-uae-service \
-    libtdx-attest=1.20.100.2-focal1 \
-    libtdx-attest-dev=1.20.100.2-focal1 \
+    libtdx-attest-dev \
     libsgx-dcap-default-qpl-dev
 
 RUN mkdir -p $HOME/.cargo/ && echo '[source.crates-io] \n registry = "git://mirrors.ustc.edu.cn/crates.io-index"' >> $HOME/.cargo/config
@@ -64,18 +64,15 @@ RUN cd /cvm-agent/cvmassistants/secretprovider/secret-provider-agent \
     && make all
 
 # Final image
-FROM ubuntu:20.04
+FROM ubuntu:24.04
 
 RUN apt-get update \
     && env DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    cryptsetup-bin \
     wget \
     software-properties-common \
     vim \
     libcbor-dev
-
-RUN mkdir -p  /usr/share/zoneinfo/
-COPY zoneinfo /usr/share/zoneinfo
-RUN ln -sf /usr/share/zoneinfo/Europe/Paris /etc/localtime
 
 RUN mkdir -p /workplace/app \
     && mkdir -p /workplace/apploader/conf \
@@ -98,7 +95,6 @@ COPY --from=build  /cvm-agent/cvmassistants/pkitool/pkitool  /workplace/cvm-agen
 COPY --from=build /cvm-agent/cvmassistants/pkitool/conf /workplace/cvm-agent/cvmassistants/pkitool/conf
 
 #get disktool
-RUN apt install -y cryptsetup-bin
 COPY --from=build  /cvm-agent/cvmassistants/disktool/ /workplace/cvm-agent/cvmassistants/disktool
 
 #for support tdx attest
@@ -110,16 +106,16 @@ RUN  mkdir -p /workplace/cvm-agent/cvmassistants/keyprovider \
     && mkdir -p /usr/local/lib/rats-tls \
     && mkdir -p /opt/csv/hsk_cek/
 
-##  RA-TLS DCAP libraries:
-RUN echo 'deb [arch=amd64] https://download.01.org/intel-sgx/sgx_repo/ubuntu focal main' | tee /etc/apt/sources.list.d/intel-sgx.list > /dev/null \
-    && wget -O - https://download.01.org/intel-sgx/sgx_repo/ubuntu/intel-sgx-deb.key | apt-key add -\
+# RA-TLS DCAP libraries
+# https://download.01.org/intel-sgx/sgx_repo/ubuntu/dists/noble/main/binary-amd64/Packages
+RUN echo 'deb [signed-by=/etc/apt/keyrings/intel-sgx-keyring.asc arch=amd64] https://download.01.org/intel-sgx/sgx_repo/ubuntu noble main' | tee /etc/apt/sources.list.d/intel-sgx.list \
+    && wget https://download.01.org/intel-sgx/sgx_repo/ubuntu/intel-sgx-deb.key -O /etc/apt/keyrings/intel-sgx-keyring.asc \
     && apt-get update \
     && apt-get install -y \
     libsgx-dcap-quote-verify \
     libsgx-dcap-ql \
     libsgx-uae-service \
-    libtdx-attest=1.20.100.2-focal1 \
-    libtdx-attest-dev=1.20.100.2-focal1 \
+    libtdx-attest \
     libsgx-dcap-default-qpl
 
 COPY --from=build  /cvm-agent/cvmassistants/keyprovider/key-provider-agent/key_provider_agent /workplace/cvm-agent/cvmassistants/keyprovider
@@ -136,9 +132,8 @@ COPY --from=build  /cvm-agent/cvmassistants/secretprovider/secret-provider-agent
 RUN apt-get update \
     && env DEBIAN_FRONTEND=noninteractive apt-get install -y \
     supervisor \
-    pip \
-    curl \
-    && pip3 install requests -i https://pypi.tuna.tsinghua.edu.cn/simple
+    curl
+
 #todo make supervisord.conf configurable so that it can change the log path
 COPY --from=build /cvm-agent/base-image/supervisord/supervisord.conf /etc/supervisor/
 COPY --from=build /cvm-agent/apploader/conf/appload-supervisord.ini /workplace/supervisord/apploader

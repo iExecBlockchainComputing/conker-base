@@ -20,11 +20,9 @@ function build::image() {
     rm -rf $BASE_DIR/../../docker-release
     mkdir -p $BASE_DIR/../../docker-release/tmp
     cp -a $BASE_DIR/Dockerfile $BASE_DIR/../../docker-release
-    cp -a $BASE_DIR/supervisord/* $BASE_DIR/../../docker-release
 
     # move to docker-release
     cd $BASE_DIR/../../docker-release
-    cp -a /usr/share/zoneinfo .
     cp -a $BASE_DIR/../* tmp
 
     docker build --no-cache --build-arg VERSION=$release_desc --build-arg https_proxy=${PROXY} -t $BASE_NAME:${VERSION} .
