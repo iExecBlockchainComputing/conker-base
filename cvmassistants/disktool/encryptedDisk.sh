@@ -37,12 +37,12 @@ detect_or_create_partition() {
     if [[ -e "${disk_dev}${suffix}" ]]; then
       part_disk="${disk_dev}${suffix}"
       mappername="${mappername}${suffix}"
-      log_info "Partition $part_disk already exists for device $DISK_dev"
+      log_info "Partition $part_disk already exists for device $disk_dev"
       return 0
     fi
   done
 
-  log_info "Creating partition on $DISK_dev with the following passed fdisk parameters: 
+  log_info "Creating partition on $disk_dev with the following passed fdisk parameters: 
   n = new partition 
   p = primary partition 
   1 = partition number 1 
@@ -50,13 +50,13 @@ detect_or_create_partition() {
   w = write changes"
   # Create the partition using fdisk
   # fdisk may return non-zero due to partition table re-read warning, but partition is created
-  echo -e "n\np\n1\n\n\nw\n" | fdisk "$DISK_dev" >/dev/null 2>&1 || true
+  echo -e "n\np\n1\n\n\nw\n" | fdisk "$disk_dev" >/dev/null 2>&1 || true
 
   # Force kernel to re-read the partition table
   if command -v partprobe >/dev/null 2>&1; then
-    partprobe "$DISK_dev" >/dev/null 2>&1 || log_fatal "partprobe failed on $DISK_dev"
+    partprobe "$disk_dev" >/dev/null 2>&1 || log_fatal "partprobe failed on $disk_dev"
   elif command -v partx >/dev/null 2>&1; then
-    partx -u "$DISK_dev" >/dev/null 2>&1 || log_fatal "partx failed on $DISK_dev"
+    partx -u "$disk_dev" >/dev/null 2>&1 || log_fatal "partx failed on $disk_dev"
   fi
 
   # Wait a moment for partition to appear
@@ -67,12 +67,12 @@ detect_or_create_partition() {
     part_disk="${disk_dev}${suffix}"
     if [[ -e "$part_disk" ]]; then 
       mappername="${mappername}${suffix}"
-      log_info "Partition $part_disk successfully created on $DISK_dev"
+      log_info "Partition $part_disk successfully created on $disk_dev"
       return 0
     fi
   done
 
-  log_fatal "Failed to create partition on $DISK_dev — no partition device detected after fdisk"
+  log_fatal "Failed to create partition on $disk_dev — no partition device detected after fdisk"
 }
 
 # Format and encrypt a partition
@@ -132,7 +132,7 @@ diskpath="/dev/$DISK" # /dev/vda
 part_disk=""
 
 mappername="${disk}"
-detect_or_create_partition "$DISKpath" # assign part_disk and mappername
+detect_or_create_partition "$disk_path" # assign part_disk and mappername
 device_to_mount="/dev/mapper/$mappername"
 [ -e "$device_to_mount"  ] && log_fatal "Mapper $device_to_mount already exists"
 
