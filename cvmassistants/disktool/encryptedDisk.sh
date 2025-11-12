@@ -127,10 +127,10 @@ else
     umount "$MOUNT_PATH" 2>/dev/null && log_info "Unmounted $MOUNT_PATH"
 fi
 
-DISK_PATH="/dev/$DISK" # /dev/vda
+diskpath="/dev/$DISK" # /dev/vda
 part_disk=""
 mappername=""
-detect_or_create_partition "$DISK_PATH" # assign part_disk and mappername
+detect_or_create_partition "$diskpath" # assign part_disk and mappername
 device_to_mount="/dev/mapper/$mappername"
 [ -e "$device_to_mount"  ] && log_fatal "Mapper $device_to_mount already exists"
 
