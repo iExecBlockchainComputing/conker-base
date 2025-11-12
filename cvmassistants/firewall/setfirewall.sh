@@ -4,7 +4,7 @@
 # Description: Configure UFW firewall rules on Ubuntu systems (e.g., TDX environment)
 #
 # This script enables UFW and allows ports defined in the environment variable
-# `allowPorts`. Supports single ports and port ranges (e.g., "22,80,3000:3010").
+# `ALLOW_PORTS`. Supports single ports and port ranges (e.g., "22,80,3000:3010").
 #
 # Requirements:
 #   - Must be run as root
@@ -51,11 +51,11 @@ fi
 log_info "UFW enabled."
 
 # Get ports from environment variable
-if [ -z "${allowPorts}" ]; then
-    log_info "No ports specified (allowPorts is empty). Skipping rule creation."
+if [ -z "${ALLOW_PORTS}" ]; then
+    log_info "No ports specified (ALLOW_PORTS is empty). Skipping rule creation."
 else
-    log_info "Allowing ports: ${allowPorts}"
-    IFS=',' read -ra PORT_ARRAY <<< "${allowPorts}"
+    log_info "Allowing ports: ${ALLOW_PORTS}"
+    IFS=',' read -ra PORT_ARRAY <<< "${ALLOW_PORTS}"
 
     for port in "${PORT_ARRAY[@]}"; do
         port="$(echo "$port" | xargs)"  # trim spaces
