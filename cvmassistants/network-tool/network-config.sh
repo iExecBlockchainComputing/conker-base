@@ -12,10 +12,10 @@
 #   - Must run on Ubuntu OS (TDX Trusted Domain Environment)
 #
 # Environment Variables Required:
-#   - ifName: Network interface name (e.g., eth0)
-#   - ifIp: IP address to assign to the interface
-#   - ifNetmask: Network subnet mask
-#   - ifGateway: Gateway IP address
+#   - IF_NAME: Network interface name (e.g., eth0)
+#   - IF_IP: IP address to assign to the interface
+#   - IF_NETMASK: Network subnet mask
+#   - IF_GATEWAY: Gateway IP address
 #
 ###############################################################################
 
@@ -27,20 +27,20 @@ function configureNetwork() {
    fi
 
    # Check if all required environment variables are set
-   if [ -z "${ifName}" ] || [ -z "${ifIp}" ] || [ -z "${ifNetmask}" ] || [ -z "${ifGateway}" ]; then
+   if [ -z "${IF_NAME}" ] || [ -z "${IF_IP}" ] || [ -z "${IF_NETMASK}" ] || [ -z "${IF_GATEWAY}" ]; then
       echo "Error: Missing required environment variables."
-      echo "Required variables: ifName, ifIp, ifNetmask, ifGateway"
+      echo "Required variables: IF_NAME, IF_IP, IF_NETMASK, IF_GATEWAY"
       exit 1
    fi
 
    echo "nameserver 8.8.8.8" > /etc/resolv.conf
 
    cat>/etc/network/interfaces<<EOF
-auto ${ifName}
-iface ${ifName} inet static
-address ${ifIp}
-netmask ${ifNetmask}
-gateway ${ifGateway}
+auto ${IF_NAME}
+iface ${IF_NAME} inet static
+address ${IF_IP}
+netmask ${IF_NETMASK}
+gateway ${IF_GATEWAY}
 EOF
 
    /etc/init.d/networking restart

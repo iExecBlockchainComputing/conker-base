@@ -14,10 +14,10 @@ csvAssistants:
     type: job
     entrypoint: /bin/bash
     env:
-      ifName: ens3
-      ifIp: 10.10.11.237
-      ifNetmask: 255.255.255.0
-      ifGateway: 10.10.11.254
+      IF_NAME: ens3
+      IF_IP: 10.10.11.237
+      IF_NETMASK: 255.255.255.0
+      IF_GATEWAY: 10.10.11.254
     args: ["/workplace/csv-agent/csvassistants/network-tool/network-config.sh"]
   - name: keyProvider
     type: job

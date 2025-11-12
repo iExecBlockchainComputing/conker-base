@@ -5,7 +5,7 @@
 #
 # This script partitions, formats, and mounts disk devices. Supports both
 # encrypted (LUKS) and unencrypted disks. Environment variables control behavior:
-# `mount_path` (mount point), `disk` (device name), `keyType` (only wrapkey supported),
+# `MOUNT_PATH` (mount point), `DISK` (device name), `KEY_TYPE` (only wrapkey supported),
 # and `wrapkey` (encryption key).
 #
 # Requirements:
@@ -113,22 +113,22 @@ mount_device() {
 log_info "Starting encrypted disk configuration..."
 
 # Check required environment variables
-[[ -z "$mount_path" ]] && log_fatal "Mount directory is null"
-[[ -z "$disk" ]] && log_fatal "Disk dev name is null"
+[[ -z "$MOUNT_PATH" ]] && log_fatal "Mount directory is null"
+[[ -z "$DISK" ]] && log_fatal "Disk dev name is null"
 # Handle only encrypted disk case
-[ "$keyType" != "wrapkey" ] && log_fatal "keyType $keyType is not supported"
+[ "$KEY_TYPE" != "wrapkey" ] && log_fatal "KEY_TYPE $KEY_TYPE is not supported"
 
 log_info "Handling encrypted disk case"
 [[ -z "$wrapkey" ]] && log_fatal "wrapkey is null"
 
-if [ ! -d "$mount_path" ]; then
-    log_info "Mount directory $mount_path does not exist"
-    mkdir -p "$mount_path" && log_info "Created mount directory $mount_path"
+if [ ! -d "$MOUNT_PATH" ]; then
+    log_info "Mount directory $MOUNT_PATH does not exist"
+    mkdir -p "$MOUNT_PATH" && log_info "Created mount directory $MOUNT_PATH"
 else
-    umount "$mount_path" 2>/dev/null && log_info "Unmounted $mount_path"
+    umount "$MOUNT_PATH" 2>/dev/null && log_info "Unmounted $MOUNT_PATH"
 fi
 
-diskpath="/dev/$disk" # /dev/vda
+diskpath="/dev/$DISK" # /dev/vda
 part_disk=""
 
 mappername="${disk}"
@@ -145,6 +145,6 @@ echo "$wrapkey" | cryptsetup open --key-file=- "$part_disk" "$mappername"
 log_info "cryptsetup open --key-file=- "$part_disk" "$mappername": success"
 
 # Mount the device
-mount_device "$device_to_mount" "$mount_path" && log_info "Mounted $device_to_mount to $mount_path"
+mount_device "$device_to_mount" "$MOUNT_PATH" && log_info "Mounted $device_to_mount to $MOUNT_PATH"
 
 log_info "Encrypted disk configuration completed."
