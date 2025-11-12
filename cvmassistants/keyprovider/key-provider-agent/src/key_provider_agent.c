@@ -40,9 +40,6 @@ int app_log_level = LOG_LEVEL_INFO;  // Default to INFO level
 #define LOG_ERROR(fmt, ...) \
     LOG_WITH_TIMESTAMP(fmt, "ERROR", LOG_LEVEL_ERROR, ##__VA_ARGS__)
 
-
-char* wrap_key = "";
-
 // -----------------------------------------------------------------------------
 // Generate a random 32-byte key (alphanumeric and special characters)
 // -----------------------------------------------------------------------------
@@ -147,24 +144,14 @@ int main(int argc, char** argv) {
         }
     } while (opt != -1);
 
-    LOG_INFO("Try to get key from local");
-    wrap_key = getenv("localKey");
+
+    char* wrap_key = generate_random_key();
     if (wrap_key == NULL) {
-        LOG_WARN("No 'localKey' found in environment, generating random key...");
-        wrap_key = generate_random_key();
-        if (wrap_key == NULL) {
-            LOG_ERROR("Failed to generate random wrap key");
-            return -1;
-        }
-        LOG_INFO("Successfully generated random wrap key");
-        LOG_INFO("Generated random wrap key: %s", wrap_key);
-    } else if (strlen(wrap_key) != WRAP_KEY_LENGTH) {
-        LOG_ERROR("Provided key is not %d bytes long, please check", WRAP_KEY_LENGTH);
+        LOG_ERROR("Failed to generate random wrap key");
         return -1;
-    } else {
-        LOG_INFO("Successfully retrieved wrap key from environment");
-        LOG_DEBUG("Wrap key is %s", wrap_key);
     }
+    LOG_INFO("Successfully generated random wrap key");
+    LOG_INFO("Generated random wrap key: %s", wrap_key);
 
     int ret = push_wrapkey_to_secret_box(wrap_key);
     if (ret != 0) {
