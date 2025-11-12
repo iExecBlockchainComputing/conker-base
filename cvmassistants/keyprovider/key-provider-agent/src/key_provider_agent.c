@@ -54,6 +54,7 @@ char* generate_random_key(void) {
     const char charset[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-.~";
     size_t charset_size = sizeof(charset) - 1;
 
+    // Seed the random number generator with current time to ensure different keys on each run
     srand((unsigned int)time(NULL));
 
     for (size_t i = 0; i < WRAP_KEY_LENGTH; i++) {
