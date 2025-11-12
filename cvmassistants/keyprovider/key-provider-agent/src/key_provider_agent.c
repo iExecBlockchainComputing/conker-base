@@ -12,6 +12,9 @@
 #define LOG_LEVEL_ERROR 3
 #define LOG_LEVEL_NONE  4
 
+// Key length for wrap key
+#define WRAP_KEY_LENGTH 32
+
 int app_log_level = LOG_LEVEL_INFO;  // Default to INFO level
 
 #define LOG_WITH_TIMESTAMP(fmt, level, associated_level, ...) \
@@ -37,8 +40,29 @@ int app_log_level = LOG_LEVEL_INFO;  // Default to INFO level
 #define LOG_ERROR(fmt, ...) \
     LOG_WITH_TIMESTAMP(fmt, "ERROR", LOG_LEVEL_ERROR, ##__VA_ARGS__)
 
+// -----------------------------------------------------------------------------
+// Generate a random 32-byte key (alphanumeric and special characters)
+// -----------------------------------------------------------------------------
+char* generate_random_key(void) {
+    char* key = malloc(WRAP_KEY_LENGTH + 1);
 
-char* wrap_key = "";
+    if (!key) {
+        LOG_ERROR("Memory allocation failed");
+        return NULL;
+    }
+
+    const char charset[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-.~";
+    size_t charset_size = sizeof(charset) - 1;
+
+    // Seed the random number generator with current time to ensure different keys on each run
+    srand((unsigned int)time(NULL));
+
+    for (size_t i = 0; i < WRAP_KEY_LENGTH; i++) {
+        key[i] = charset[rand() % charset_size];
+    }
+    key[WRAP_KEY_LENGTH] = '\0';
+    return key;
+}
 
 int push_wrapkey_to_secret_box(const char* wrapkey) {
     CURL* curl;
@@ -54,7 +78,7 @@ int push_wrapkey_to_secret_box(const char* wrapkey) {
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(curl, CURLOPT_DEFAULT_PROTOCOL, "http");
 
-        strcpy(request_buffer, "key=wrapkey&value=");
+        strcpy(request_buffer, "key=WRAP_KEY&value=");
         strcat(request_buffer, wrapkey);
         LOG_DEBUG("Request body is %s", request_buffer);
 
@@ -80,7 +104,7 @@ int push_wrapkey_to_secret_box(const char* wrapkey) {
 
 int main(int argc, char** argv) {
     setvbuf(stdout, NULL, _IONBF, 0);
-    
+
     // Command line options
     char* const short_options = "l:h";
     struct option long_options[] = {
@@ -88,7 +112,7 @@ int main(int argc, char** argv) {
         {"help", no_argument, NULL, 'h'},
         {0, 0, 0, 0}
     };
-    
+
     int opt;
     do {
         opt = getopt_long(argc, argv, short_options, long_options, NULL);
@@ -120,20 +144,16 @@ int main(int argc, char** argv) {
                 exit(-1);
         }
     } while (opt != -1);
-    
-    LOG_INFO("Try to get key from local");
-    wrap_key = getenv("localKey");
-    if (NULL == wrap_key) {
-        LOG_ERROR("local-key does not config");
-        return -1;
-    }
-    if (strlen(wrap_key) != 32) {
-        LOG_ERROR("Key size is not 32 bytes, please check");
-        return -1;
-    }
 
-    LOG_INFO("Get wrap_key successful from local");
-    LOG_DEBUG("Wrapkey is %s", wrap_key);
+
+    char* wrap_key = generate_random_key();
+    if (wrap_key == NULL) {
+        LOG_ERROR("Failed to generate random wrap key");
+        return -1;
+    }
+    LOG_INFO("Successfully generated random wrap key");
+    LOG_INFO("Generated random wrap key: %s", wrap_key);
+
     int ret = push_wrapkey_to_secret_box(wrap_key);
     if (ret != 0) {
         LOG_ERROR("Push wrapkey to secret box failed");
