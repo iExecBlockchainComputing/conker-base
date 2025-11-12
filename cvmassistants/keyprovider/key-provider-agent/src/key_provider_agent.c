@@ -12,6 +12,9 @@
 #define LOG_LEVEL_ERROR 3
 #define LOG_LEVEL_NONE  4
 
+// Key length for wrap key
+#define WRAP_KEY_LENGTH 32
+
 int app_log_level = LOG_LEVEL_INFO;  // Default to INFO level
 
 #define LOG_WITH_TIMESTAMP(fmt, level, associated_level, ...) \
@@ -39,6 +42,29 @@ int app_log_level = LOG_LEVEL_INFO;  // Default to INFO level
 
 
 char* wrap_key = "";
+
+// -----------------------------------------------------------------------------
+// Generate a random 32-byte key (alphanumeric and special characters)
+// -----------------------------------------------------------------------------
+char* generate_random_key(void) {
+    char* key = malloc(WRAP_KEY_LENGTH + 1);
+
+    if (!key) {
+        LOG_ERROR("Memory allocation failed");
+        return NULL;
+    }
+
+    const char charset[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-.~";
+    size_t charset_size = sizeof(charset) - 1;
+
+    srand((unsigned int)time(NULL));
+
+    for (size_t i = 0; i < WRAP_KEY_LENGTH; i++) {
+        key[i] = charset[rand() % charset_size];
+    }
+    key[WRAP_KEY_LENGTH] = '\0';
+    return key;
+}
 
 int push_wrapkey_to_secret_box(const char* wrapkey) {
     CURL* curl;
@@ -80,7 +106,7 @@ int push_wrapkey_to_secret_box(const char* wrapkey) {
 
 int main(int argc, char** argv) {
     setvbuf(stdout, NULL, _IONBF, 0);
-    
+
     // Command line options
     char* const short_options = "l:h";
     struct option long_options[] = {
@@ -88,7 +114,7 @@ int main(int argc, char** argv) {
         {"help", no_argument, NULL, 'h'},
         {0, 0, 0, 0}
     };
-    
+
     int opt;
     do {
         opt = getopt_long(argc, argv, short_options, long_options, NULL);
@@ -120,20 +146,26 @@ int main(int argc, char** argv) {
                 exit(-1);
         }
     } while (opt != -1);
-    
+
     LOG_INFO("Try to get key from local");
     wrap_key = getenv("localKey");
-    if (NULL == wrap_key) {
-        LOG_ERROR("local-key does not config");
+    if (wrap_key == NULL) {
+        LOG_WARN("No 'localKey' found in environment, generating random key...");
+        wrap_key = generate_random_key();
+        if (wrap_key == NULL) {
+            LOG_ERROR("Failed to generate random wrap key");
+            return -1;
+        }
+        LOG_INFO("Successfully generated random wrap key");
+        LOG_INFO("Generated random wrap key: %s", wrap_key);
+    } else if (strlen(wrap_key) != WRAP_KEY_LENGTH) {
+        LOG_ERROR("Provided key is not %d bytes long, please check", WRAP_KEY_LENGTH);
         return -1;
-    }
-    if (strlen(wrap_key) != 32) {
-        LOG_ERROR("Key size is not 32 bytes, please check");
-        return -1;
+    } else {
+        LOG_INFO("Successfully retrieved wrap key from environment");
+        LOG_DEBUG("Wrap key is %s", wrap_key);
     }
 
-    LOG_INFO("Get wrap_key successful from local");
-    LOG_DEBUG("Wrapkey is %s", wrap_key);
     int ret = push_wrapkey_to_secret_box(wrap_key);
     if (ret != 0) {
         LOG_ERROR("Push wrapkey to secret box failed");
