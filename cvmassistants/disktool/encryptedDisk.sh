@@ -132,7 +132,7 @@ diskpath="/dev/$DISK" # /dev/vda
 part_disk=""
 
 mappername="${disk}"
-detect_or_create_partition "$disk_path" # assign part_disk and mappername
+detect_or_create_partition "$diskpath" # assign part_disk and mappername
 device_to_mount="/dev/mapper/$mappername"
 [ -e "$device_to_mount"  ] && log_fatal "Mapper $device_to_mount already exists"
 
