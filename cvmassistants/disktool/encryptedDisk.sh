@@ -6,7 +6,7 @@
 # This script partitions, formats, and mounts disk devices. Supports both
 # encrypted (LUKS) and unencrypted disks. Environment variables control behavior:
 # `MOUNT_PATH` (mount point), `DISK` (device name), `KEY_TYPE` (only wrapkey supported),
-# and `wrapkey` (encryption key).
+# and `WRAP_KEY` (encryption key).
 #
 # Requirements:
 #   - Must be run as root
@@ -42,11 +42,11 @@ detect_or_create_partition() {
     fi
   done
 
-  log_info "Creating partition on $disk_dev with the following passed fdisk parameters: 
-  n = new partition 
-  p = primary partition 
-  1 = partition number 1 
-  <Enter><Enter> = default start and end sectors 
+  log_info "Creating partition on $disk_dev with the following passed fdisk parameters:
+  n = new partition
+  p = primary partition
+  1 = partition number 1
+  <Enter><Enter> = default start and end sectors
   w = write changes"
   # Create the partition using fdisk
   # fdisk may return non-zero due to partition table re-read warning, but partition is created
@@ -65,7 +65,7 @@ detect_or_create_partition() {
   # Try both possible partition naming schemes
   for suffix in "1" "p1"; do
     part_disk="${disk_dev}${suffix}"
-    if [[ -e "$part_disk" ]]; then 
+    if [[ -e "$part_disk" ]]; then
       mappername="${mappername}${suffix}"
       log_info "Partition $part_disk successfully created on $disk_dev"
       return 0
@@ -81,7 +81,7 @@ format_and_encrypt_partition() {
   local key="$1"
   local part_dev="$2"
   local mapper="$3"
-  
+
   echo "$key" | cryptsetup luksFormat --key-file=- "$part_dev"
   [[ $? -ne 0 ]] && log_fatal "Failed to format partition $part_dev in luks format"
   log_info "Partition $part_dev formatted successfully in luks format"
@@ -93,7 +93,7 @@ format_and_encrypt_partition() {
   mkfs.ext4 "/dev/mapper/$mapper"
   [[ $? -ne 0 ]] && log_fatal "Failed to format partition /dev/mapper/$mapper in ext4 format"
   log_info "Partition /dev/mapper/$mapper successfully formatted in ext4 format"
-  
+
   cryptsetup close "$mapper"
   [[ $? -ne 0 ]] && log_fatal "Failed to close partition /dev/mapper/$mapper"
   log_info "Partition /dev/mapper/$mapper closed successfully"
@@ -104,7 +104,7 @@ format_and_encrypt_partition() {
 mount_device() {
   local device="$1"
   local mount_point="$2"
-  
+
   mount "$device" "$mount_point"
   [[ $? -ne 0 ]] && log_fatal "Failed to mount $device to $mount_point"
   log_info "Mounted $device to $mount_point"
@@ -119,7 +119,7 @@ log_info "Starting encrypted disk configuration..."
 [ "$KEY_TYPE" != "wrapkey" ] && log_fatal "KEY_TYPE $KEY_TYPE is not supported"
 
 log_info "Handling encrypted disk case"
-[[ -z "$wrapkey" ]] && log_fatal "wrapkey is null"
+[[ -z "$WRAP_KEY" ]] && log_fatal "WRAP_KEY is null"
 
 if [ ! -d "$MOUNT_PATH" ]; then
     log_info "Mount directory $MOUNT_PATH does not exist"
@@ -137,10 +137,10 @@ device_to_mount="/dev/mapper/$mappername"
 [ -e "$device_to_mount"  ] && log_fatal "Mapper $device_to_mount already exists"
 
 # Format and encrypt the partition (and check if it opens correctly)
-format_and_encrypt_partition "$wrapkey" "$part_disk" "$mappername"
+format_and_encrypt_partition "$WRAP_KEY" "$part_disk" "$mappername"
 
 # Open the encrypted device in its mapper
-echo "$wrapkey" | cryptsetup open --key-file=- "$part_disk" "$mappername"
+echo "$WRAP_KEY" | cryptsetup open --key-file=- "$part_disk" "$mappername"
 [[ $? -ne 0 ]] && log_fatal "cryptsetup open --key-file=- "$part_disk" "$mappername": failed"
 log_info "cryptsetup open --key-file=- "$part_disk" "$mappername": success"
 
