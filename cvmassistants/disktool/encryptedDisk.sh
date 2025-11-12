@@ -32,11 +32,10 @@ detect_or_create_partition() {
   local suffix
 
   # Try both possible partition naming schemes (e.g., /dev/sda1 or /dev/nvme0n1p1)
-  part_disk=""
   for suffix in "1" "p1"; do
     if [[ -e "${disk_dev}${suffix}" ]]; then
       part_disk="${disk_dev}${suffix}"
-      mappername="${mappername}${suffix}"
+      mappername="${DISK}${suffix}"
       log_info "Partition $part_disk already exists for device $disk_dev"
       return 0
     fi
@@ -66,7 +65,7 @@ detect_or_create_partition() {
   for suffix in "1" "p1"; do
     part_disk="${disk_dev}${suffix}"
     if [[ -e "$part_disk" ]]; then 
-      mappername="${mappername}${suffix}"
+      mappername="${DISK}${suffix}"
       log_info "Partition $part_disk successfully created on $disk_dev"
       return 0
     fi
@@ -128,11 +127,10 @@ else
     umount "$MOUNT_PATH" 2>/dev/null && log_info "Unmounted $MOUNT_PATH"
 fi
 
-diskpath="/dev/$DISK" # /dev/vda
+DISK_PATH="/dev/$DISK" # /dev/vda
 part_disk=""
-
-mappername="${disk}"
-detect_or_create_partition "$diskpath" # assign part_disk and mappername
+mappername=""
+detect_or_create_partition "$DISK_PATH" # assign part_disk and mappername
 device_to_mount="/dev/mapper/$mappername"
 [ -e "$device_to_mount"  ] && log_fatal "Mapper $device_to_mount already exists"
 
