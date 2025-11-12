@@ -80,7 +80,7 @@ int push_wrapkey_to_secret_box(const char* wrapkey) {
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(curl, CURLOPT_DEFAULT_PROTOCOL, "http");
 
-        strcpy(request_buffer, "key=wrapkey&value=");
+        strcpy(request_buffer, "key=WRAP_KEY&value=");
         strcat(request_buffer, wrapkey);
         LOG_DEBUG("Request body is %s", request_buffer);
 
