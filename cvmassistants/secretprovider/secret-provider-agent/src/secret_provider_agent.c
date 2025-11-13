@@ -351,7 +351,6 @@ int main(int argc, char** argv) {
     }
 
     LOG_INFO("Get secret successful");
-    LOG_DEBUG("Secret is %s", secret);
 
     fputs(secret, file);
     fclose(file);
