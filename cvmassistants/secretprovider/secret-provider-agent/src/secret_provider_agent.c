@@ -81,8 +81,12 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
     if (validation_error) {
         return NULL;
     }
+    LOG_DEBUG("attester_type: %s", attester_type);
+    LOG_DEBUG("verifier_type: %s", verifier_type);
+    LOG_DEBUG("tls_type: %s", tls_type);
+    LOG_DEBUG("crypto_type: %s", crypto_type);
+    
     rats_tls_conf_t conf;
-
     memset(&conf, 0, sizeof(conf));
 
     char* app_id;
@@ -111,8 +115,10 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
     strncpy(conf.crypto_type, crypto_type, CRYPTO_TYPE_NAME_SIZE - 1);
     conf.crypto_type[CRYPTO_TYPE_NAME_SIZE - 1] = '\0';
     conf.cert_algo = RATS_TLS_CERT_ALGO_DEFAULT;
-    if (mutual)
+    if (mutual){
         conf.flags |= RATS_TLS_CONF_FLAGS_MUTUAL;
+        LOG_DEBUG("Mutual attestation is enabled");
+    }
 
     /* Create a socket that uses an internet IPv4 address,
      * Sets the socket to be stream based (TCP),
@@ -205,8 +211,9 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
     buf[bytes_received] = '\0';
 
     ret = rats_tls_cleanup(handle);
-    if (ret != RATS_TLS_ERR_NONE)
+    if (ret != RATS_TLS_ERR_NONE){
         LOG_ERROR("Failed to cleanup %#x", ret);
+    } 
 
     close(sockfd);
     return buf;
