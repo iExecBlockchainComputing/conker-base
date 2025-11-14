@@ -49,13 +49,13 @@ detect_or_create_partition() {
   w = write changes"
   # Create the partition using fdisk
   # fdisk may return non-zero due to partition table re-read warning, but partition is created
-  echo -e "n\np\n1\n\n\nw\n" | fdisk "$disk_dev" >/dev/null 2>&1 || true
+  echo -e "n\np\n1\n\n\nw\n" | fdisk "$disk_dev"
 
   # Force kernel to re-read the partition table
   if command -v partprobe >/dev/null 2>&1; then
-    partprobe "$disk_dev" >/dev/null 2>&1 || log_fatal "partprobe failed on $disk_dev"
+    partprobe "$disk_dev" || log_fatal "partprobe failed on $disk_dev"
   elif command -v partx >/dev/null 2>&1; then
-    partx -u "$disk_dev" >/dev/null 2>&1 || log_fatal "partx failed on $disk_dev"
+    partx -u "$disk_dev" || log_fatal "partx failed on $disk_dev"
   fi
 
   # Wait a moment for partition to appear
@@ -124,7 +124,7 @@ if [ ! -d "$MOUNT_PATH" ]; then
     log_info "Mount directory $MOUNT_PATH does not exist"
     mkdir -p "$MOUNT_PATH" && log_info "Created mount directory $MOUNT_PATH"
 else
-    umount "$MOUNT_PATH" 2>/dev/null && log_info "Unmounted $MOUNT_PATH"
+    umount "$MOUNT_PATH" && log_info "Unmounted $MOUNT_PATH"
 fi
 
 diskpath="/dev/$DISK" # /dev/vda
