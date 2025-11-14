@@ -69,6 +69,7 @@ FROM ubuntu:24.04
 RUN apt-get update \
     && env DEBIAN_FRONTEND=noninteractive apt-get install -y \
     cryptsetup-bin \
+    fdisk \
     wget \
     software-properties-common \
     vim \
