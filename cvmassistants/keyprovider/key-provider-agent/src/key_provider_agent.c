@@ -80,7 +80,6 @@ int push_wrapkey_to_secret_box(const char* wrapkey) {
 
         strcpy(request_buffer, "key=WRAP_KEY&value=");
         strcat(request_buffer, wrapkey);
-        LOG_DEBUG("Request body is %s", request_buffer);
 
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, request_buffer);
         res = curl_easy_perform(curl);
@@ -152,7 +151,6 @@ int main(int argc, char** argv) {
         return -1;
     }
     LOG_INFO("Successfully generated random wrap key");
-    LOG_INFO("Generated random wrap key: %s", wrap_key);
 
     int ret = push_wrapkey_to_secret_box(wrap_key);
     if (ret != 0) {
