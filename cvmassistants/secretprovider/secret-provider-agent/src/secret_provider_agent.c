@@ -228,14 +228,14 @@ err:
 int main(int argc, char** argv) {
     setvbuf(stdout, NULL, _IONBF, 0);
     char* secret = "";
-    LOG_INFO("Try to get key from kbs");
+    LOG_INFO("Try to get key from KBS");
     char* kbs_endpoint = getenv("kbsEndpoint");
     if (NULL == kbs_endpoint) {
-        LOG_ERROR("Kbs mode must config kbsEndpoint");
+        LOG_ERROR("KBS mode must config kbsEndpoint environment variable");
         return -1;
     }
 
-    LOG_DEBUG("Config of kbsEndpoint is %s", kbs_endpoint);
+    LOG_DEBUG("Config of KBS endpoint is %s", kbs_endpoint);
 
     char* secret_save_path = NULL;
     char* srv_ip = NULL;
@@ -346,7 +346,7 @@ int main(int argc, char** argv) {
                                                   tls_type, crypto_type, mutual, srv_ip,
                                                   port, appid_flag);
     if (secret == NULL) {
-        LOG_ERROR("Get secret from kbs failed");
+        LOG_ERROR("Get secret from KBS failed");
         return -1;
     }
 
