@@ -43,7 +43,7 @@ rats_tls_log_level_t log_level = RATS_TLS_LOG_LEVEL_INFO;
 
 const char* command_get_secret = "getSecret";
 
-char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
+char* get_secret_from_sbs_through_rats_tls(rats_tls_log_level_t log_level,
                                            char* attester_type,
                                            char* verifier_type,
                                            char* tls_type,
@@ -228,24 +228,24 @@ err:
 int main(int argc, char** argv) {
     setvbuf(stdout, NULL, _IONBF, 0);
     char* secret = "";
-    LOG_INFO("Try to get key from KBS");
-    char* kbs_endpoint = getenv("kbsEndpoint");
-    if (NULL == kbs_endpoint) {
-        LOG_ERROR("KBS mode must config kbsEndpoint environment variable");
+    LOG_INFO("Try to get key from SBS");
+    char* sbs_endpoint = getenv("sbsEndpoint");
+    if (NULL == sbs_endpoint) {
+        LOG_ERROR("SBS mode must config sbsEndpoint environment variable");
         return -1;
     }
 
-    LOG_DEBUG("Config of KBS endpoint is %s", kbs_endpoint);
+    LOG_DEBUG("Config of SBS endpoint is %s", sbs_endpoint);
 
     char* secret_save_path = NULL;
     char* srv_ip = NULL;
     char* str_port = NULL;
     int port;
 
-    srv_ip = strtok(kbs_endpoint, ":");
+    srv_ip = strtok(sbs_endpoint, ":");
     str_port = strtok(NULL, ":");
     if (NULL == str_port) {
-        LOG_ERROR("KbsEndpoint format error, eg: 127.0.0.1:5443");
+        LOG_ERROR("sbsEndpoint format error, eg: 127.0.0.1:5443");
         return -1;
     }
     port = atoi(str_port);
@@ -342,11 +342,11 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    secret = get_secret_from_kbs_through_rats_tls(log_level, attester_type, verifier_type,
+    secret = get_secret_from_sbs_through_rats_tls(log_level, attester_type, verifier_type,
                                                   tls_type, crypto_type, mutual, srv_ip,
                                                   port, appid_flag);
     if (secret == NULL) {
-        LOG_ERROR("Get secret from KBS failed");
+        LOG_ERROR("Get secret from SBS failed");
         return -1;
     }
 
