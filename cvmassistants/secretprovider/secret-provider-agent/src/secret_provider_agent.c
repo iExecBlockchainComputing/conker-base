@@ -43,7 +43,7 @@ rats_tls_log_level_t log_level = RATS_TLS_LOG_LEVEL_INFO;
 
 const char* command_get_secret = "getSecret";
 
-char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
+char* get_secret_from_sbs_through_rats_tls(rats_tls_log_level_t log_level,
                                            char* attester_type,
                                            char* verifier_type,
                                            char* tls_type,
@@ -81,8 +81,12 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
     if (validation_error) {
         return NULL;
     }
+    LOG_DEBUG("attester_type: %s", attester_type);
+    LOG_DEBUG("verifier_type: %s", verifier_type);
+    LOG_DEBUG("tls_type: %s", tls_type);
+    LOG_DEBUG("crypto_type: %s", crypto_type);
+    
     rats_tls_conf_t conf;
-
     memset(&conf, 0, sizeof(conf));
 
     char* app_id;
@@ -96,7 +100,7 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
             conf.custom_claims = (claim_t*)custom_claims;
             conf.custom_claims_length = 1;
         } else {
-            LOG_ERROR("could not read the app_id from env");
+            LOG_ERROR("Could not read the app_id from env");
             return NULL;
         }
     }
@@ -111,8 +115,10 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
     strncpy(conf.crypto_type, crypto_type, CRYPTO_TYPE_NAME_SIZE - 1);
     conf.crypto_type[CRYPTO_TYPE_NAME_SIZE - 1] = '\0';
     conf.cert_algo = RATS_TLS_CERT_ALGO_DEFAULT;
-    if (mutual)
+    if (mutual){
         conf.flags |= RATS_TLS_CONF_FLAGS_MUTUAL;
+        LOG_DEBUG("Mutual attestation is enabled");
+    }
 
     /* Create a socket that uses an internet IPv4 address,
      * Sets the socket to be stream based (TCP),
@@ -120,7 +126,7 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
      */
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) {
-        LOG_ERROR("failed to call socket()");
+        LOG_ERROR("Failed to call socket()");
         return NULL;
     }
     struct sockaddr_in s_addr;
@@ -130,14 +136,14 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
 
     /* Get the server IPv4 address from the command line call */
     if (inet_pton(AF_INET, ip, &s_addr.sin_addr) != 1) {
-        LOG_ERROR("invalid server address");
+        LOG_ERROR("Invalid server address");
         close(sockfd);
         return NULL;
     }
 
     /* Connect to the server */
     if (connect(sockfd, (struct sockaddr*)&s_addr, sizeof(s_addr)) == -1) {
-        LOG_ERROR("failed to call connect()");
+        LOG_ERROR("Failed to call connect()");
         close(sockfd);
         return NULL;
     }
@@ -205,8 +211,9 @@ char* get_secret_from_kbs_through_rats_tls(rats_tls_log_level_t log_level,
     buf[bytes_received] = '\0';
 
     ret = rats_tls_cleanup(handle);
-    if (ret != RATS_TLS_ERR_NONE)
+    if (ret != RATS_TLS_ERR_NONE){
         LOG_ERROR("Failed to cleanup %#x", ret);
+    } 
 
     close(sockfd);
     return buf;
@@ -221,24 +228,24 @@ err:
 int main(int argc, char** argv) {
     setvbuf(stdout, NULL, _IONBF, 0);
     char* secret = "";
-    LOG_INFO("try to get key from kbs");
-    char* kbs_endpoint = getenv("kbsEndpoint");
-    if (NULL == kbs_endpoint) {
-        LOG_ERROR("kbs mode must config kbsEndpoint");
+    LOG_INFO("Try to get key from SBS");
+    char* sbs_endpoint = getenv("sbsEndpoint");
+    if (NULL == sbs_endpoint) {
+        LOG_ERROR("SBS mode must config sbsEndpoint environment variable");
         return -1;
     }
 
-    LOG_DEBUG("config of kbsEndpoint is %s", kbs_endpoint);
+    LOG_DEBUG("Config of SBS endpoint is %s", sbs_endpoint);
 
     char* secret_save_path = NULL;
     char* srv_ip = NULL;
     char* str_port = NULL;
     int port;
 
-    srv_ip = strtok(kbs_endpoint, ":");
+    srv_ip = strtok(sbs_endpoint, ":");
     str_port = strtok(NULL, ":");
     if (NULL == str_port) {
-        LOG_ERROR("kbsEndpoint format error, eg: 127.0.0.1:5443");
+        LOG_ERROR("sbsEndpoint format error, eg: 127.0.0.1:5443");
         return -1;
     }
     port = atoi(str_port);
@@ -335,16 +342,15 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    secret = get_secret_from_kbs_through_rats_tls(log_level, attester_type, verifier_type,
+    secret = get_secret_from_sbs_through_rats_tls(log_level, attester_type, verifier_type,
                                                   tls_type, crypto_type, mutual, srv_ip,
                                                   port, appid_flag);
     if (secret == NULL) {
-        LOG_ERROR("get secret from kbs failed");
+        LOG_ERROR("Get secret from SBS failed");
         return -1;
     }
 
-    LOG_INFO("get secret successful");
-    LOG_DEBUG("secret is %s", secret);
+    LOG_INFO("Get secret successful");
 
     fputs(secret, file);
     fclose(file);
