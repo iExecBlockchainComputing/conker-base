@@ -330,14 +330,25 @@ int main(int argc, char** argv) {
     LOG_DEBUG("Config of SBS endpoint is %s", sbs_endpoint);
 
     srv_ip = strtok(sbs_endpoint, ":");
+    if (srv_ip == NULL) {
+        LOG_ERROR("sbsEndpoint format error: missing IP address, eg: 127.0.0.1");
+        return -1;
+    }else{
+        struct in_addr test_addr;
+        if (inet_pton(AF_INET, srv_ip, &test_addr) != 1) {
+            LOG_ERROR("Invalid IP address format: %s", srv_ip);
+            return -1;
+        }
+    }
+    
     str_port = strtok(NULL, ":");
-    if (NULL == str_port) {
-        LOG_ERROR("sbsEndpoint format error, eg: 127.0.0.1:5443");
+    if (str_port == NULL) {
+        LOG_ERROR("sbsEndpoint format error: missing port, eg: 5443");
         return -1;
     }
     port = atoi(str_port);
-    if (port == 0) {
-        LOG_ERROR("Port is invalid, got %s", str_port);
+    if (port <= 0 || port > 65535) {
+        LOG_ERROR("Port is invalid or out of valid range (1-65535), got %d", port);
         return -1;
     }
 
