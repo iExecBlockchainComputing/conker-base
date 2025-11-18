@@ -331,6 +331,10 @@ int main(int argc, char** argv) {
         return -1;
     }
     port = atoi(str_port);
+    if (port == 0) {
+        LOG_ERROR("Port is invalid, got %s", str_port);
+        return -1;
+    }
 
     if (secret_save_path == NULL) {
         LOG_ERROR("Path to store secret locally is missing");
