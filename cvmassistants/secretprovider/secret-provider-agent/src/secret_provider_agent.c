@@ -317,6 +317,11 @@ int main(int argc, char** argv) {
 
     LOG_INFO("Selected log level %d", log_level);
 
+    if (app_id == NULL) {
+        LOG_ERROR("App ID is missing");
+        return -1;
+    }
+
     if (sbs_endpoint == NULL) {
         LOG_ERROR("SBS mode must provide sbsEndpoint argument (--sbsEndpoint/-e)");
         return -1;
