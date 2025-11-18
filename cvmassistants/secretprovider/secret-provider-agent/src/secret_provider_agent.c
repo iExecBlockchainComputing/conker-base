@@ -229,27 +229,14 @@ int main(int argc, char** argv) {
     setvbuf(stdout, NULL, _IONBF, 0);
     char* secret = "";
     LOG_INFO("Try to get key from SBS");
-    char* sbs_endpoint = getenv("sbsEndpoint");
-    if (NULL == sbs_endpoint) {
-        LOG_ERROR("SBS mode must config sbsEndpoint environment variable");
-        return -1;
-    }
-
-    LOG_DEBUG("Config of SBS endpoint is %s", sbs_endpoint);
 
     char* secret_save_path = NULL;
+    char* sbs_endpoint = NULL;
     char* srv_ip = NULL;
     char* str_port = NULL;
     int port;
 
-    srv_ip = strtok(sbs_endpoint, ":");
-    str_port = strtok(NULL, ":");
-    if (NULL == str_port) {
-        LOG_ERROR("sbsEndpoint format error, eg: 127.0.0.1:5443");
-        return -1;
-    }
-    port = atoi(str_port);
-    char* const short_options = "a:v:t:c:ml:fs:h";
+    char* const short_options = "a:v:t:c:ml:fs:e:h";
     struct option long_options[] = {
         {"attester", required_argument, NULL, 'a'},
         {"verifier", required_argument, NULL, 'v'},
@@ -259,6 +246,7 @@ int main(int argc, char** argv) {
         {"log-level", required_argument, NULL, 'l'},
         {"appId", no_argument, NULL, 'f'},
         {"savePath", required_argument, NULL, 's'},
+        {"sbsEndpoint", required_argument, NULL, 'e'},
         {"help", no_argument, NULL, 'h'},
         {0, 0, 0, 0}};
 
@@ -304,6 +292,9 @@ int main(int argc, char** argv) {
             case 's':
                 secret_save_path = optarg;
                 break;
+            case 'e':
+                sbs_endpoint = optarg;
+                break;
             case -1:
                 break;
             case 'h':
@@ -322,7 +313,8 @@ int main(int argc, char** argv) {
                     "        --debug-enclave/-D    set to enable enclave debugging\n"
                     "        --verdictd/-E         set to connect verdictd based on EAA protocol\n"
                     "        --appId/-f            need to add appid to claims\n"
-                    "        --savePath/-s         save secret to local path"
+                    "        --savePath/-s         save secret to local path\n"
+                    "        --sbsEndpoint/-e      set the SBS endpoint (format: IP:PORT)\n"
                     "        --help/-h             show the usage\n");
                 exit(-1);
             default:
@@ -331,6 +323,21 @@ int main(int argc, char** argv) {
     } while (opt != -1);
 
     LOG_INFO("Selected log level %d", log_level);
+
+    if (sbs_endpoint == NULL) {
+        LOG_ERROR("SBS mode must provide sbsEndpoint argument (--sbsEndpoint/-e)");
+        return -1;
+    }
+
+    LOG_DEBUG("Config of SBS endpoint is %s", sbs_endpoint);
+
+    srv_ip = strtok(sbs_endpoint, ":");
+    str_port = strtok(NULL, ":");
+    if (NULL == str_port) {
+        LOG_ERROR("sbsEndpoint format error, eg: 127.0.0.1:5443");
+        return -1;
+    }
+    port = atoi(str_port);
 
     if (secret_save_path == NULL) {
         LOG_ERROR("Path to store secret locally is missing");
