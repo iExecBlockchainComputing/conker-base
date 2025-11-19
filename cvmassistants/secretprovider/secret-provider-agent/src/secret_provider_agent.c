@@ -224,8 +224,8 @@ int main(int argc, char** argv) {
     LOG_INFO("Try to get key from SBS");
 
     const char* secret_save_path = NULL;
-    char* sbs_endpoint = NULL;
-    const char* srv_ip = NULL;
+    const char* sbs_endpoint = NULL;
+    char ip_buf[INET_ADDRSTRLEN];
     const char* str_port = NULL;
     int port;
 
@@ -329,20 +329,33 @@ int main(int argc, char** argv) {
 
     LOG_DEBUG("Config of SBS endpoint is %s", sbs_endpoint);
 
-    srv_ip = strtok(sbs_endpoint, ":");
-    if (srv_ip == NULL) {
-        LOG_ERROR("sbsEndpoint format error: missing IP address, eg: 127.0.0.1");
+    const char* colon = strchr(sbs_endpoint, ':');
+    if (colon == NULL) {
+        LOG_ERROR("sbsEndpoint format error: missing ':', eg: 127.0.0.1:5443");
         return -1;
-    }else{
-        struct in_addr test_addr;
-        if (inet_pton(AF_INET, srv_ip, &test_addr) != 1) {
-            LOG_ERROR("Invalid IP address format: %s", srv_ip);
-            return -1;
-        }
     }
     
-    str_port = strtok(NULL, ":");
-    if (str_port == NULL) {
+    size_t ip_len = colon - sbs_endpoint;
+    if (ip_len == 0) {
+        LOG_ERROR("sbsEndpoint format error: missing IP address");
+        return -1;
+    }
+    if (ip_len >= INET_ADDRSTRLEN) {
+        LOG_ERROR("sbsEndpoint format error: IP address too long");
+        return -1;
+    }
+    
+    memcpy(ip_buf, sbs_endpoint, ip_len);
+    ip_buf[ip_len] = '\0';
+    
+    struct in_addr test_addr;
+    if (inet_pton(AF_INET, ip_buf, &test_addr) != 1) {
+        LOG_ERROR("Invalid IP address format: %s", ip_buf);
+        return -1;
+    }
+    
+    str_port = colon + 1;
+    if (*str_port == '\0') {
         LOG_ERROR("sbsEndpoint format error: missing port, eg: 5443");
         return -1;
     }
@@ -363,7 +376,7 @@ int main(int argc, char** argv) {
     }
 
     secret = get_secret_from_sbs_through_rats_tls(log_level, attester_type, verifier_type,
-                                                  tls_type, crypto_type, mutual, srv_ip,
+                                                  tls_type, crypto_type, mutual, ip_buf,
                                                   port, app_id);
     if (secret == NULL) {
         LOG_ERROR("Get secret from SBS failed");
