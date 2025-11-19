@@ -20,7 +20,7 @@
     do { \
         if (log_level <= rats_level) { \
             time_t now = time(NULL); \
-            struct tm *t = gmtime(&now); \
+            const struct tm *t = gmtime(&now); \
             char ts[24]; \
             strftime(ts, sizeof(ts), "%Y-%m-%d %H:%M:%S UTC", t); \
             printf("%-29s [%-5s] [%s:%d] " fmt "\n", ts, level, __FILE__, __LINE__, ##__VA_ARGS__); \
@@ -44,14 +44,14 @@ rats_tls_log_level_t log_level = RATS_TLS_LOG_LEVEL_INFO;
 const char* command_get_secret = "getSecret";
 
 char* get_secret_from_sbs_through_rats_tls(rats_tls_log_level_t log_level,
-                                           char* attester_type,
-                                           char* verifier_type,
-                                           char* tls_type,
-                                           char* crypto_type,
+                                           const char* attester_type,
+                                           const char* verifier_type,
+                                           const char* tls_type,
+                                           const char* crypto_type,
                                            bool mutual,
-                                           char* ip,
+                                           const char* ip,
                                            int port,
-                                           char* app_id) {
+                                           const char* app_id) {
 
     bool validation_error = false;
     if (attester_type == NULL || strlen(attester_type) >= ENCLAVE_ATTESTER_TYPE_NAME_SIZE) {
@@ -223,10 +223,10 @@ int main(int argc, char** argv) {
     char* secret = "";
     LOG_INFO("Try to get key from SBS");
 
-    char* secret_save_path = NULL;
-    char* sbs_endpoint = NULL;
-    char* srv_ip = NULL;
-    char* str_port = NULL;
+    const char* secret_save_path = NULL;
+    const char* sbs_endpoint = NULL;
+    char ip_buf[INET_ADDRSTRLEN];
+    const char* str_port = NULL;
     int port;
 
     char* const short_options = "a:v:t:c:ml:s:i:e:h";
@@ -243,12 +243,12 @@ int main(int argc, char** argv) {
         {"help", no_argument, NULL, 'h'},
         {0, 0, 0, 0}};
 
-    char* attester_type = "";
-    char* verifier_type = "";
-    char* tls_type = "";
-    char* crypto_type = "";
+    const char* attester_type = "";
+    const char* verifier_type = "";
+    const char* tls_type = "";
+    const char* crypto_type = "";
     bool mutual = true;
-    char* app_id = NULL;
+    const char* app_id = NULL;
     int opt;
     do {
         opt = getopt_long(argc, argv, short_options, long_options, NULL);
@@ -317,6 +317,11 @@ int main(int argc, char** argv) {
 
     LOG_INFO("Selected log level %d", log_level);
 
+    if (app_id == NULL) {
+        LOG_ERROR("App ID is missing");
+        return -1;
+    }
+
     if (sbs_endpoint == NULL) {
         LOG_ERROR("SBS mode must provide sbsEndpoint argument (--sbsEndpoint/-e)");
         return -1;
@@ -324,15 +329,39 @@ int main(int argc, char** argv) {
 
     LOG_DEBUG("Config of SBS endpoint is %s", sbs_endpoint);
 
-    srv_ip = strtok(sbs_endpoint, ":");
-    str_port = strtok(NULL, ":");
-    if (NULL == str_port) {
-        LOG_ERROR("sbsEndpoint format error, eg: 127.0.0.1:5443");
+    const char* colon = strchr(sbs_endpoint, ':');
+    if (colon == NULL) {
+        LOG_ERROR("sbsEndpoint format error: missing ':', eg: 127.0.0.1:5443");
+        return -1;
+    }
+    
+    size_t ip_len = colon - sbs_endpoint;
+    if (ip_len == 0) {
+        LOG_ERROR("sbsEndpoint format error: missing IP address");
+        return -1;
+    }
+    if (ip_len >= INET_ADDRSTRLEN) {
+        LOG_ERROR("sbsEndpoint format error: IP address too long");
+        return -1;
+    }
+    
+    memcpy(ip_buf, sbs_endpoint, ip_len);
+    ip_buf[ip_len] = '\0';
+    
+    struct in_addr test_addr;
+    if (inet_pton(AF_INET, ip_buf, &test_addr) != 1) {
+        LOG_ERROR("Invalid IP address format: %s", ip_buf);
+        return -1;
+    }
+    
+    str_port = colon + 1;
+    if (*str_port == '\0') {
+        LOG_ERROR("sbsEndpoint format error: missing port, eg: 5443");
         return -1;
     }
     port = atoi(str_port);
-    if (port == 0) {
-        LOG_ERROR("Port is invalid, got %s", str_port);
+    if (port <= 0 || port > 65535) {
+        LOG_ERROR("Port is invalid or out of valid range (1-65535), got %d", port);
         return -1;
     }
 
@@ -347,7 +376,7 @@ int main(int argc, char** argv) {
     }
 
     secret = get_secret_from_sbs_through_rats_tls(log_level, attester_type, verifier_type,
-                                                  tls_type, crypto_type, mutual, srv_ip,
+                                                  tls_type, crypto_type, mutual, ip_buf,
                                                   port, app_id);
     if (secret == NULL) {
         LOG_ERROR("Get secret from SBS failed");
