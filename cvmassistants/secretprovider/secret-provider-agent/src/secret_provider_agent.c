@@ -20,7 +20,7 @@
     do { \
         if (log_level <= rats_level) { \
             time_t now = time(NULL); \
-            struct tm *t = gmtime(&now); \
+            const struct tm *t = gmtime(&now); \
             char ts[24]; \
             strftime(ts, sizeof(ts), "%Y-%m-%d %H:%M:%S UTC", t); \
             printf("%-29s [%-5s] [%s:%d] " fmt "\n", ts, level, __FILE__, __LINE__, ##__VA_ARGS__); \
@@ -44,14 +44,14 @@ rats_tls_log_level_t log_level = RATS_TLS_LOG_LEVEL_INFO;
 const char* command_get_secret = "getSecret";
 
 char* get_secret_from_sbs_through_rats_tls(rats_tls_log_level_t log_level,
-                                           char* attester_type,
-                                           char* verifier_type,
-                                           char* tls_type,
-                                           char* crypto_type,
+                                           const char* attester_type,
+                                           const char* verifier_type,
+                                           const char* tls_type,
+                                           const char* crypto_type,
                                            bool mutual,
                                            char* ip,
                                            int port,
-                                           char* app_id) {
+                                           const char* app_id) {
 
     bool validation_error = false;
     if (attester_type == NULL || strlen(attester_type) >= ENCLAVE_ATTESTER_TYPE_NAME_SIZE) {
@@ -243,12 +243,12 @@ int main(int argc, char** argv) {
         {"help", no_argument, NULL, 'h'},
         {0, 0, 0, 0}};
 
-    char* attester_type = "";
-    char* verifier_type = "";
-    char* tls_type = "";
-    char* crypto_type = "";
+    const char* attester_type = "";
+    const char* verifier_type = "";
+    const char* tls_type = "";
+    const char* crypto_type = "";
     bool mutual = true;
-    char* app_id = NULL;
+    const char* app_id = NULL;
     int opt;
     do {
         opt = getopt_long(argc, argv, short_options, long_options, NULL);
