@@ -49,7 +49,7 @@ char* get_secret_from_sbs_through_rats_tls(rats_tls_log_level_t log_level,
                                            const char* tls_type,
                                            const char* crypto_type,
                                            bool mutual,
-                                           char* ip,
+                                           const char* ip,
                                            int port,
                                            const char* app_id) {
 
@@ -223,10 +223,10 @@ int main(int argc, char** argv) {
     char* secret = "";
     LOG_INFO("Try to get key from SBS");
 
-    char* secret_save_path = NULL;
+    const char* secret_save_path = NULL;
     char* sbs_endpoint = NULL;
-    char* srv_ip = NULL;
-    char* str_port = NULL;
+    const char* srv_ip = NULL;
+    const char* str_port = NULL;
     int port;
 
     char* const short_options = "a:v:t:c:ml:s:i:e:h";
