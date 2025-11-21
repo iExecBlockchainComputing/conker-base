@@ -10,7 +10,7 @@ RUN apt-get update \
 ARG VERSION=latest
 RUN echo $VERSION > /VERSION
 
-COPY tmp /cvm-agent
+COPY . /cvm-agent
 
 RUN wget --no-proxy --progress=bar:force -c https://dl.google.com/go/go1.24.9.linux-amd64.tar.gz -O - | tar -xz -C /usr/local
 ENV PATH=$PATH:/usr/local/go/bin
@@ -127,8 +127,6 @@ COPY --from=build  /usr/local/lib/rats-tls/  /usr/local/lib/rats-tls/
 RUN  mkdir -p /workplace/cvm-agent/cvmassistants/secretprovider
 COPY --from=build  /cvm-agent/cvmassistants/secretprovider/secret-provider-agent/secret_provider_agent /workplace/cvm-agent/cvmassistants/secretprovider
 
-#RUN echo  "export LD_LIBRARY_PATH=/usr/local/lib/rats-tls:$LD_LIBRARY_PATH" >> /etc/profile
-
 #config supervisord
 RUN apt-get update \
     && env DEBIAN_FRONTEND=noninteractive apt-get install -y \
@@ -136,7 +134,7 @@ RUN apt-get update \
     curl
 
 #todo make supervisord.conf configurable so that it can change the log path
-COPY --from=build /cvm-agent/base-image/supervisord/supervisord.conf /etc/supervisor/
+COPY --from=build /cvm-agent/supervisord/supervisord.conf /etc/supervisor/
 COPY --from=build /cvm-agent/apploader/conf/appload-supervisord.ini /workplace/supervisord/apploader
 
 #install firewall
