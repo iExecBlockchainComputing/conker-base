@@ -55,12 +55,30 @@ RUN git clone https://github.com/inclavare-containers/rats-tls.git /rats-tls\
     && sed -i s@if\ 0@if\ 1@g src/tls_wrappers/api/tls_wrapper_verify_certificate_extension.c \
     && cmake -DRATS_TLS_BUILD_MODE="tdx" -DBUILD_SAMPLES=on -H. -Bbuild \
     && make -C build install \
-    && cp -a /rats-tls/src/include/rats-tls/claim.h /usr/local/include/rats-tls/
+    && cp -a /rats-tls/src/include/rats-tls/claim.h /usr/local/include/rats-tls/ \
+    && cp -a /rats-tls/src/include/rats-tls/api.h /usr/local/include/rats-tls/ \
+    && cp -a /rats-tls/src/include/rats-tls/crypto_wrapper.h /usr/local/include/rats-tls/ \  
+    && cp -a /rats-tls/src/include/rats-tls/err.h /usr/local/include/rats-tls/ \
+    && cp -a /rats-tls/src/include/rats-tls/sgx.h /usr/local/include/rats-tls/ \
+    && cp -a /rats-tls/src/include/rats-tls/verifier.h /usr/local/include/rats-tls/ \
+    && cp -a /rats-tls/src/include/rats-tls/attester.h /usr/local/include/rats-tls/ \
+    && cp -a /rats-tls/src/include/rats-tls/compilation.h /usr/local/include/rats-tls/ \
+    && cp -a /rats-tls/src/include/rats-tls/csv.h /usr/local/include/rats-tls/ \
+    && cp -a /rats-tls/src/include/rats-tls/hash.h /usr/local/include/rats-tls/ \
+    && cp -a /rats-tls/src/verifiers/tdx-ecdsa/tdx-ecdsa.h /usr/local/include/rats-tls/ \
+    && cp -a /rats-tls/src/include/rats-tls/cert.h /usr/local/include/rats-tls/ \
+    && cp -a /rats-tls/src/include/internal/core.h /usr/local/include/rats-tls/ \
+    && cp -a /rats-tls/src/include/rats-tls/endorsement.h /usr/local/include/rats-tls/ \
+    && cp -a /rats-tls/src/include/rats-tls/log.h /usr/local/include/rats-tls/ \
+    && cp -a /rats-tls/src/include/rats-tls/tls_wrapper.h /usr/local/include/rats-tls/
 
 RUN cd /cvm-agent/cvmassistants/keyprovider/key-provider-agent \
     && make all
 
 RUN cd /cvm-agent/cvmassistants/secretprovider/secret-provider-agent \
+    && make all
+
+RUN cd /cvm-agent/cvmassistants/quote-generator \
     && make all
 
 # Final image
@@ -126,6 +144,10 @@ COPY --from=build  /usr/local/lib/rats-tls/  /usr/local/lib/rats-tls/
 #get secretprovier-agent
 RUN  mkdir -p /workplace/cvm-agent/cvmassistants/secretprovider
 COPY --from=build  /cvm-agent/cvmassistants/secretprovider/secret-provider-agent/secret_provider_agent /workplace/cvm-agent/cvmassistants/secretprovider
+
+#get quote-generator
+RUN  mkdir -p /workplace/cvm-agent/cvmassistants/quote-generator
+COPY --from=build  /cvm-agent/cvmassistants/quote-generator/quote_generator /workplace/cvm-agent/cvmassistants/quote-generator
 
 #RUN echo  "export LD_LIBRARY_PATH=/usr/local/lib/rats-tls:$LD_LIBRARY_PATH" >> /etc/profile
 
