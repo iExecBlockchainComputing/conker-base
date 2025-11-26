@@ -55,8 +55,7 @@ Running:
 To build the confidential VM base image:
 
 ```bash
-cd base-image
-bash release.sh buildimage
+bash release.sh
 ```
 
 This will compile all necessary components (e.g., the secret provider agent) and produce a Docker image named ```cvm-base```
