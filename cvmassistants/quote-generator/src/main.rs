@@ -33,7 +33,7 @@ use log::{debug, error, info};
 use std::env;
 use std::fs;
 use tdx_attest_rs;
- 
+
 fn main() {
     // Initialize the logger (defaults to INFO level, override with RUST_LOG env var)
     env_logger::init();
