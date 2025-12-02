@@ -6,3 +6,5 @@ edition = "2018"
 
 [dependencies]
 tdx-attest-rs = { path = "/confidential-computing.tee.dcap/QuoteGeneration/quote_wrapper/tdx-attest-rs"}
+log = "0.4"
+env_logger = "0.11"
