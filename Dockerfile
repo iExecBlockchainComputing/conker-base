@@ -3,6 +3,7 @@ FROM ubuntu:24.04 AS build
 RUN apt-get update \
     && env DEBIAN_FRONTEND=noninteractive apt-get install -y \
     wget \
+    curl \
     pkg-config \
     unzip \
     build-essential
@@ -17,7 +18,7 @@ ENV PATH=$PATH:/usr/local/go/bin
 
 # Install latest Rust from official source
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-ENV PATH=$PATH:$HOME/.cargo/bin
+ENV PATH=/root/.cargo/bin:$PATH
 
 RUN cd /cvm-agent/apploader \
     && go build -ldflags "-w -s -X apploader/version.version=${VERSION}" -o apploader
@@ -34,7 +35,8 @@ RUN apt-get install -y \
     libssl-dev \
     software-properties-common \
     libcurl4-openssl-dev \
-    libcbor-dev
+    libcbor-dev \
+    libclang-dev
 
 # RA-TLS DCAP libraries
 # https://download.01.org/intel-sgx/sgx_repo/ubuntu/dists/noble/main/binary-amd64/Packages
@@ -47,8 +49,6 @@ RUN echo 'deb [signed-by=/etc/apt/keyrings/intel-sgx-keyring.asc arch=amd64] htt
     libsgx-uae-service \
     libtdx-attest-dev \
     libsgx-dcap-default-qpl-dev
-
-RUN mkdir -p $HOME/.cargo && echo '[source.crates-io] \n registry = "git://mirrors.ustc.edu.cn/crates.io-index"' >> $HOME/.cargo/config
 
 ## todovm-cal 1005.1
 RUN git clone https://github.com/inclavare-containers/rats-tls.git /rats-tls\
