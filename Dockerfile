@@ -48,7 +48,7 @@ RUN echo 'deb [signed-by=/etc/apt/keyrings/intel-sgx-keyring.asc arch=amd64] htt
     libtdx-attest-dev \
     libsgx-dcap-default-qpl-dev
 
-RUN echo '[source.crates-io] \n registry = "git://mirrors.ustc.edu.cn/crates.io-index"' >> $HOME/.cargo/config
+RUN mkdir -p $HOME/.cargo && echo '[source.crates-io] \n registry = "git://mirrors.ustc.edu.cn/crates.io-index"' >> $HOME/.cargo/config
 
 ## todovm-cal 1005.1
 RUN git clone https://github.com/inclavare-containers/rats-tls.git /rats-tls\
@@ -67,7 +67,7 @@ RUN cd /cvm-agent/cvmassistants/secretprovider/secret-provider-agent \
     && make all
 
 # Get tdx-attest-rs crate and its dependencies from official intel repo
-RUN git clone https://github.com/iExecBlockchainComputing/confidential-computing.tee.dcap.git /confidential-computing.tee.dcap \
+RUN git clone https://github.com/intel/confidential-computing.tee.dcap.git /confidential-computing.tee.dcap \
     && cd /confidential-computing.tee.dcap \
     # DCAP 1.23 release
     && git checkout e880e54c8f35d44a4763e08dff32a046c8ef2230
