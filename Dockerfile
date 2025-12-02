@@ -66,6 +66,16 @@ RUN cd /cvm-agent/cvmassistants/keyprovider/key-provider-agent \
 RUN cd /cvm-agent/cvmassistants/secretprovider/secret-provider-agent \
     && make all
 
+# Get tdx-attest-rs crate and its dependencies from official intel repo
+RUN git clone https://github.com/iExecBlockchainComputing/confidential-computing.tee.dcap.git /confidential-computing.tee.dcap \
+    && cd /confidential-computing.tee.dcap \
+    # DCAP 1.23 release
+    && git checkout e880e54c8f35d44a4763e08dff32a046c8ef2230
+
+# Build quote-generator
+RUN cd /cvm-agent/cvmassistants/quote-generator \
+    && cargo build --release
+
 # Final image
 FROM ubuntu:24.04
 
@@ -129,6 +139,10 @@ COPY --from=build  /usr/local/lib/rats-tls/  /usr/local/lib/rats-tls/
 #get secretprovier-agent
 RUN  mkdir -p /workplace/cvm-agent/cvmassistants/secretprovider
 COPY --from=build  /cvm-agent/cvmassistants/secretprovider/secret-provider-agent/secret_provider_agent /workplace/cvm-agent/cvmassistants/secretprovider
+
+#get quote-generator
+RUN mkdir -p /workplace/cvm-agent/cvmassistants/quote-generator
+COPY --from=build /cvm-agent/cvmassistants/quote-generator/target/release/quote-generator /workplace/cvm-agent/cvmassistants/quote-generator
 
 #config supervisord
 RUN apt-get update \
