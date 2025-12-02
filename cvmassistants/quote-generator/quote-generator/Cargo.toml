@@ -1,0 +1,8 @@
+[package]
+name = "quote-generator"
+version = "1.0.0"
+edition = "2018"
+
+
+[dependencies]
+tdx-attest-rs = { path = "/confidential-computing.tee.dcap/QuoteGeneration/quote_wrapper/tdx-attest-rs"}
