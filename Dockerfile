@@ -15,6 +15,10 @@ COPY . /cvm-agent
 RUN wget --no-proxy --progress=bar:force -c https://dl.google.com/go/go1.24.9.linux-amd64.tar.gz -O - | tar -xz -C /usr/local
 ENV PATH=$PATH:/usr/local/go/bin
 
+# Install latest Rust from official source
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH=$PATH:$HOME/.cargo/bin
+
 RUN cd /cvm-agent/apploader \
     && go build -ldflags "-w -s -X apploader/version.version=${VERSION}" -o apploader
 
@@ -27,7 +31,6 @@ RUN apt-get install -y \
     make    \
     cmake   \
     gcc     \
-    cargo   \
     libssl-dev \
     software-properties-common \
     libcurl4-openssl-dev \
@@ -45,7 +48,7 @@ RUN echo 'deb [signed-by=/etc/apt/keyrings/intel-sgx-keyring.asc arch=amd64] htt
     libtdx-attest-dev \
     libsgx-dcap-default-qpl-dev
 
-RUN mkdir -p $HOME/.cargo/ && echo '[source.crates-io] \n registry = "git://mirrors.ustc.edu.cn/crates.io-index"' >> $HOME/.cargo/config
+RUN echo '[source.crates-io] \n registry = "git://mirrors.ustc.edu.cn/crates.io-index"' >> $HOME/.cargo/config
 
 ## todovm-cal 1005.1
 RUN git clone https://github.com/inclavare-containers/rats-tls.git /rats-tls\
