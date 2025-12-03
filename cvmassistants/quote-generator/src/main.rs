@@ -40,31 +40,25 @@ const REPORT_SIZE: usize = 1024;
 const TDX_UUID_SIZE: usize = 16;
 const QUOTE_FILE_NAME: &str = "quote.dat";
 
-fn create_tdx_report(
-    input_bytes: &[u8],
-) -> (
-    tdx_attest_rs::tdx_report_data_t,
-    tdx_attest_rs::tdx_report_t,
-) {
-    let mut report_data_bytes = [0u8; REPORT_DATA_SIZE];
-    report_data_bytes.copy_from_slice(input_bytes);
-
+fn create_report_data(input_bytes: &[u8]) -> tdx_attest_rs::tdx_report_data_t {
     let report_data = tdx_attest_rs::tdx_report_data_t {
-        d: report_data_bytes,
+        d: input_bytes.try_into().unwrap(),
     };
     debug!("TDX report data: {:?}", report_data.d);
 
+    report_data
+}
+
+fn display_tdx_report(report_data: &tdx_attest_rs::tdx_report_data_t) {
     let mut tdx_report = tdx_attest_rs::tdx_report_t {
         d: [0; REPORT_SIZE],
     };
-    let result = tdx_attest_rs::tdx_att_get_report(Some(&report_data), &mut tdx_report);
+    let result = tdx_attest_rs::tdx_att_get_report(Some(report_data), &mut tdx_report);
     if result != tdx_attest_rs::tdx_attest_error_t::TDX_ATTEST_SUCCESS {
         error!("Failed to get the report");
         process::exit(1);
     }
     debug!("TDX report: {:?}", tdx_report.d);
-
-    (report_data, tdx_report)
 }
 
 fn create_quote(report_data: &tdx_attest_rs::tdx_report_data_t) -> Vec<u8> {
@@ -115,7 +109,8 @@ fn main() {
         process::exit(1);
     }
 
-    let (report_data, _tdx_report) = create_tdx_report(input_bytes);
+    let report_data = create_report_data(input_bytes);
+    display_tdx_report(&report_data); // Report is only displayed on debug mode
     let quote = create_quote(&report_data);
     fs::write(QUOTE_FILE_NAME, quote).expect("Unable to write quote file");
     info!("Quote successfully written to {}", QUOTE_FILE_NAME);
