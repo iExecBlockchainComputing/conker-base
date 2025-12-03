@@ -37,6 +37,7 @@ use tdx_attest_rs;
 const REPORT_DATA_SIZE: usize = 64;
 const REPORT_SIZE: usize = 1024;
 const TDX_UUID_SIZE: usize = 16;
+const QUOTE_FILE_NAME: &str = "quote.dat";
 
 fn main() {
     // Initialize the logger (defaults to INFO level, override with RUST_LOG env var)
@@ -44,7 +45,7 @@ fn main() {
 
     let args: Vec<String> = env::args().collect();
     if args.len() != 2 {
-        error!("Usage: {} <64-byte-report-data>", args[0]);
+        error!("Usage: {} <{}-byte-report-data>", args[0], REPORT_DATA_SIZE);
         return;
     }
 
@@ -52,7 +53,8 @@ fn main() {
     let input_bytes = input.as_bytes();
     if input_bytes.len() != REPORT_DATA_SIZE {
         error!(
-            "report_data must be exactly 64 bytes, got {} bytes",
+            "report_data must be exactly {} bytes, got {} bytes",
+            REPORT_DATA_SIZE,
             input_bytes.len()
         );
         return;
@@ -93,8 +95,8 @@ fn main() {
         Some(q) => {
             debug!("Successfully generated TDX quote with {} bytes", q.len());
             debug!("Quote: {:?}", q);
-            fs::write("quote.dat", q).expect("Unable to write quote file");
-            info!("Quote successfully written to quote.dat");
+            fs::write(QUOTE_FILE_NAME, q).expect("Unable to write quote file");
+            info!("Quote successfully written to {}", QUOTE_FILE_NAME);
         }
         None => {
             error!("Failed to get the quote");
