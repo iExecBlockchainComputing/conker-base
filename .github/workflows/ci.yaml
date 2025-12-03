@@ -7,7 +7,6 @@ on:
   workflow_dispatch:
 
 jobs:
-
   prepare:
     name: Determine image tag
     runs-on: ubuntu-latest
@@ -44,17 +43,15 @@ jobs:
 
   build-oci-image:
     name: Build OCI images
-    needs: prepare
-    runs-on:
-      group: Azure_runners
     uses: iExecBlockchainComputing/github-actions-workflows/.github/workflows/docker-build.yml@feature/allow-args-for-docker-build
+    needs: prepare
     with:
       image-name: docker-regis.iex.ec/cvm-base
       image-tag: ${{ needs.prepare.outputs.image_tag }}
       dockerfile: Dockerfile
       context: .
       registry: docker-regis.iex.ec
-      push: false
+      push: true
       security-scan: false
       security-report: "table"
       hadolint: false
