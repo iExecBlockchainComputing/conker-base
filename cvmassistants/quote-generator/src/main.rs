@@ -40,6 +40,60 @@ const REPORT_SIZE: usize = 1024;
 const TDX_UUID_SIZE: usize = 16;
 const QUOTE_FILE_NAME: &str = "quote.dat";
 
+fn create_tdx_report(
+    input_bytes: &[u8],
+) -> (
+    tdx_attest_rs::tdx_report_data_t,
+    tdx_attest_rs::tdx_report_t,
+) {
+    let mut report_data_bytes = [0u8; REPORT_DATA_SIZE];
+    report_data_bytes.copy_from_slice(input_bytes);
+
+    let report_data = tdx_attest_rs::tdx_report_data_t {
+        d: report_data_bytes,
+    };
+    debug!("TDX report data: {:?}", report_data.d);
+
+    let mut tdx_report = tdx_attest_rs::tdx_report_t {
+        d: [0; REPORT_SIZE],
+    };
+    let result = tdx_attest_rs::tdx_att_get_report(Some(&report_data), &mut tdx_report);
+    if result != tdx_attest_rs::tdx_attest_error_t::TDX_ATTEST_SUCCESS {
+        error!("Failed to get the report");
+        process::exit(1);
+    }
+    debug!("TDX report: {:?}", tdx_report.d);
+
+    (report_data, tdx_report)
+}
+
+fn create_quote(report_data: &tdx_attest_rs::tdx_report_data_t) -> Vec<u8> {
+    let mut selected_att_key_id = tdx_attest_rs::tdx_uuid_t {
+        d: [0; TDX_UUID_SIZE],
+    };
+    let (result, quote) = tdx_attest_rs::tdx_att_get_quote(
+        Some(report_data),
+        None,
+        Some(&mut selected_att_key_id),
+        0,
+    );
+    if result != tdx_attest_rs::tdx_attest_error_t::TDX_ATTEST_SUCCESS {
+        error!("Failed to get the quote");
+        process::exit(1);
+    }
+    match quote {
+        Some(q) => {
+            debug!("Successfully generated TDX quote with {} bytes", q.len());
+            debug!("Quote: {:?}", q);
+            q
+        }
+        None => {
+            error!("Failed to get the quote");
+            process::exit(1);
+        }
+    }
+}
+
 fn main() {
     // Initialize the logger (defaults to INFO level, override with RUST_LOG env var)
     env_logger::init();
@@ -61,47 +115,8 @@ fn main() {
         process::exit(1);
     }
 
-    let mut report_data_bytes = [0u8; REPORT_DATA_SIZE];
-    report_data_bytes.copy_from_slice(input_bytes);
-
-    let report_data = tdx_attest_rs::tdx_report_data_t {
-        d: report_data_bytes,
-    };
-    debug!("TDX report data: {:?}", report_data.d);
-
-    let mut tdx_report = tdx_attest_rs::tdx_report_t {
-        d: [0; REPORT_SIZE],
-    };
-    let result = tdx_attest_rs::tdx_att_get_report(Some(&report_data), &mut tdx_report);
-    if result != tdx_attest_rs::tdx_attest_error_t::TDX_ATTEST_SUCCESS {
-        error!("Failed to get the report");
-        process::exit(1);
-    }
-    debug!("TDX report: {:?}", tdx_report.d);
-
-    let mut selected_att_key_id = tdx_attest_rs::tdx_uuid_t {
-        d: [0; TDX_UUID_SIZE],
-    };
-    let (result, quote) = tdx_attest_rs::tdx_att_get_quote(
-        Some(&report_data),
-        None,
-        Some(&mut selected_att_key_id),
-        0,
-    );
-    if result != tdx_attest_rs::tdx_attest_error_t::TDX_ATTEST_SUCCESS {
-        error!("Failed to get the quote");
-        process::exit(1);
-    }
-    match quote {
-        Some(q) => {
-            debug!("Successfully generated TDX quote with {} bytes", q.len());
-            debug!("Quote: {:?}", q);
-            fs::write(QUOTE_FILE_NAME, q).expect("Unable to write quote file");
-            info!("Quote successfully written to {}", QUOTE_FILE_NAME);
-        }
-        None => {
-            error!("Failed to get the quote");
-            process::exit(1);
-        }
-    }
+    let (report_data, _tdx_report) = create_tdx_report(input_bytes);
+    let quote = create_quote(&report_data);
+    fs::write(QUOTE_FILE_NAME, quote).expect("Unable to write quote file");
+    info!("Quote successfully written to {}", QUOTE_FILE_NAME);
 }
