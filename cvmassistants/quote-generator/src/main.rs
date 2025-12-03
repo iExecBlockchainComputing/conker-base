@@ -34,6 +34,10 @@ use std::env;
 use std::fs;
 use tdx_attest_rs;
 
+const REPORT_DATA_SIZE: usize = 64;
+const REPORT_SIZE: usize = 1024;
+const TDX_UUID_SIZE: usize = 16;
+
 fn main() {
     // Initialize the logger (defaults to INFO level, override with RUST_LOG env var)
     env_logger::init();
@@ -46,7 +50,7 @@ fn main() {
 
     let input = &args[1];
     let input_bytes = input.as_bytes();
-    if input_bytes.len() != 64 {
+    if input_bytes.len() != REPORT_DATA_SIZE {
         error!(
             "report_data must be exactly 64 bytes, got {} bytes",
             input_bytes.len()
@@ -54,7 +58,7 @@ fn main() {
         return;
     }
 
-    let mut report_data_bytes = [0u8; 64];
+    let mut report_data_bytes = [0u8; REPORT_DATA_SIZE];
     report_data_bytes.copy_from_slice(input_bytes);
 
     let report_data = tdx_attest_rs::tdx_report_data_t {
@@ -62,7 +66,7 @@ fn main() {
     };
     debug!("TDX report data: {:?}", report_data.d);
 
-    let mut tdx_report = tdx_attest_rs::tdx_report_t { d: [0; 1024usize] };
+    let mut tdx_report = tdx_attest_rs::tdx_report_t { d: [0; REPORT_SIZE] };
     let result = tdx_attest_rs::tdx_att_get_report(Some(&report_data), &mut tdx_report);
     if result != tdx_attest_rs::tdx_attest_error_t::TDX_ATTEST_SUCCESS {
         error!("Failed to get the report");
@@ -70,7 +74,7 @@ fn main() {
     }
     debug!("TDX report: {:?}", tdx_report.d);
 
-    let mut selected_att_key_id = tdx_attest_rs::tdx_uuid_t { d: [0; 16usize] };
+    let mut selected_att_key_id = tdx_attest_rs::tdx_uuid_t { d: [0; TDX_UUID_SIZE] };
     let (result, quote) = tdx_attest_rs::tdx_att_get_quote(
         Some(&report_data),
         None,
