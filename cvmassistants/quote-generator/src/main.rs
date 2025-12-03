@@ -44,15 +44,17 @@ const QUOTE_FILE_NAME: &str = "quote.dat";
 ///
 /// # Arguments
 ///
-/// * `input_bytes` - A byte slice that must be exactly `REPORT_DATA_SIZE` bytes long
+/// * `input_bytes` - A byte slice that **must be exactly `REPORT_DATA_SIZE` bytes long**.
+///   In this binary, `main` guarantees this by copying/padding the user input into
+///   a fixed-size `REPORT_DATA_SIZE` buffer before calling this function.
 ///
 /// # Returns
 ///
-/// A `tdx_report_data_t` structure containing the input bytes
+/// A `tdx_report_data_t` structure containing the input bytes.
 ///
 /// # Panics
 ///
-/// Panics if `input_bytes` length doesn't match `REPORT_DATA_SIZE`
+/// Panics if `input_bytes` length doesn't match `REPORT_DATA_SIZE` (due to `try_into().unwrap()`).
 fn create_report_data(input_bytes: &[u8]) -> tdx_attest_rs::tdx_report_data_t {
     let report_data = tdx_attest_rs::tdx_report_data_t {
         d: input_bytes.try_into().unwrap(),
@@ -141,16 +143,19 @@ fn main() {
 
     let input = &args[1];
     let input_bytes = input.as_bytes();
-    if input_bytes.len() != REPORT_DATA_SIZE {
+    if input_bytes.len() > REPORT_DATA_SIZE {
         error!(
-            "report_data must be exactly {} bytes, got {} bytes",
+            "report_data must be at most {} bytes, got {} bytes",
             REPORT_DATA_SIZE,
             input_bytes.len()
         );
         process::exit(1);
     }
 
-    let report_data = create_report_data(input_bytes);
+    let mut report_bytes = [0u8; REPORT_DATA_SIZE];
+    report_bytes[..input_bytes.len()].copy_from_slice(input_bytes);
+
+    let report_data = create_report_data(&report_bytes);
     display_tdx_report(&report_data); // Report is only displayed on debug mode - this function is optional
     let quote = create_quote(&report_data);
     fs::write(QUOTE_FILE_NAME, quote).expect("Unable to write quote file");
