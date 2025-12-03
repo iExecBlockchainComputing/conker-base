@@ -32,6 +32,7 @@
 use log::{debug, error, info};
 use std::env;
 use std::fs;
+use std::process;
 use tdx_attest_rs;
 
 const REPORT_DATA_SIZE: usize = 64;
@@ -46,7 +47,7 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() != 2 {
         error!("Usage: {} <{}-byte-report-data>", args[0], REPORT_DATA_SIZE);
-        return;
+        process::exit(1);
     }
 
     let input = &args[1];
@@ -57,7 +58,7 @@ fn main() {
             REPORT_DATA_SIZE,
             input_bytes.len()
         );
-        return;
+        process::exit(1);
     }
 
     let mut report_data_bytes = [0u8; REPORT_DATA_SIZE];
@@ -74,7 +75,7 @@ fn main() {
     let result = tdx_attest_rs::tdx_att_get_report(Some(&report_data), &mut tdx_report);
     if result != tdx_attest_rs::tdx_attest_error_t::TDX_ATTEST_SUCCESS {
         error!("Failed to get the report");
-        return;
+        process::exit(1);
     }
     debug!("TDX report: {:?}", tdx_report.d);
 
@@ -89,7 +90,7 @@ fn main() {
     );
     if result != tdx_attest_rs::tdx_attest_error_t::TDX_ATTEST_SUCCESS {
         error!("Failed to get the quote");
-        return;
+        process::exit(1);
     }
     match quote {
         Some(q) => {
@@ -100,7 +101,7 @@ fn main() {
         }
         None => {
             error!("Failed to get the quote");
-            return;
+            process::exit(1);
         }
     }
 }
