@@ -40,6 +40,19 @@ const REPORT_SIZE: usize = 1024;
 const TDX_UUID_SIZE: usize = 16;
 const QUOTE_FILE_NAME: &str = "quote.dat";
 
+/// Creates a TDX report data structure from input bytes.
+///
+/// # Arguments
+///
+/// * `input_bytes` - A byte slice that must be exactly `REPORT_DATA_SIZE` bytes long
+///
+/// # Returns
+///
+/// A `tdx_report_data_t` structure containing the input bytes
+///
+/// # Panics
+///
+/// Panics if `input_bytes` length doesn't match `REPORT_DATA_SIZE`
 fn create_report_data(input_bytes: &[u8]) -> tdx_attest_rs::tdx_report_data_t {
     let report_data = tdx_attest_rs::tdx_report_data_t {
         d: input_bytes.try_into().unwrap(),
@@ -49,6 +62,18 @@ fn create_report_data(input_bytes: &[u8]) -> tdx_attest_rs::tdx_report_data_t {
     report_data
 }
 
+/// Generates and displays a TDX report for the given report data.
+///
+/// This function creates a TDX report and logs it at debug level.
+/// The report is only visible when the logger is configured to show debug messages.
+///
+/// # Arguments
+///
+/// * `report_data` - The report data to use for generating the TDX report
+///
+/// # Exits
+///
+/// Exits with status code 1 if the report generation fails
 fn display_tdx_report(report_data: &tdx_attest_rs::tdx_report_data_t) {
     let mut tdx_report = tdx_attest_rs::tdx_report_t {
         d: [0; REPORT_SIZE],
@@ -61,6 +86,22 @@ fn display_tdx_report(report_data: &tdx_attest_rs::tdx_report_data_t) {
     debug!("TDX report: {:?}", tdx_report.d);
 }
 
+/// Creates a TDX attestation quote from the given report data.
+///
+/// This function generates a cryptographic quote that can be used to verify
+/// the integrity and authenticity of the TDX environment.
+///
+/// # Arguments
+///
+/// * `report_data` - The report data to include in the quote
+///
+/// # Returns
+///
+/// A `Vec<u8>` containing the generated quote data
+///
+/// # Exits
+///
+/// Exits with status code 1 if quote generation fails
 fn create_quote(report_data: &tdx_attest_rs::tdx_report_data_t) -> Vec<u8> {
     let mut selected_att_key_id = tdx_attest_rs::tdx_uuid_t {
         d: [0; TDX_UUID_SIZE],
