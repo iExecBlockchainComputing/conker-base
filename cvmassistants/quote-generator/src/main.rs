@@ -66,7 +66,9 @@ fn main() {
     };
     debug!("TDX report data: {:?}", report_data.d);
 
-    let mut tdx_report = tdx_attest_rs::tdx_report_t { d: [0; REPORT_SIZE] };
+    let mut tdx_report = tdx_attest_rs::tdx_report_t {
+        d: [0; REPORT_SIZE],
+    };
     let result = tdx_attest_rs::tdx_att_get_report(Some(&report_data), &mut tdx_report);
     if result != tdx_attest_rs::tdx_attest_error_t::TDX_ATTEST_SUCCESS {
         error!("Failed to get the report");
@@ -74,7 +76,9 @@ fn main() {
     }
     debug!("TDX report: {:?}", tdx_report.d);
 
-    let mut selected_att_key_id = tdx_attest_rs::tdx_uuid_t { d: [0; TDX_UUID_SIZE] };
+    let mut selected_att_key_id = tdx_attest_rs::tdx_uuid_t {
+        d: [0; TDX_UUID_SIZE],
+    };
     let (result, quote) = tdx_attest_rs::tdx_att_get_quote(
         Some(&report_data),
         None,
