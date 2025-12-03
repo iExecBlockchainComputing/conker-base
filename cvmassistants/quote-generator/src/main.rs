@@ -151,7 +151,7 @@ fn main() {
     }
 
     let report_data = create_report_data(input_bytes);
-    display_tdx_report(&report_data); // Report is only displayed on debug mode
+    display_tdx_report(&report_data); // Report is only displayed on debug mode - this function is optional
     let quote = create_quote(&report_data);
     fs::write(QUOTE_FILE_NAME, quote).expect("Unable to write quote file");
     info!("Quote successfully written to {}", QUOTE_FILE_NAME);
