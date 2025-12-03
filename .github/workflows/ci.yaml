@@ -45,6 +45,8 @@ jobs:
   build-oci-image:
     name: Build OCI images
     needs: prepare
+    runs-on:
+      group: Azure_runners
     uses: iExecBlockchainComputing/github-actions-workflows/.github/workflows/docker-build.yml@feature/allow-args-for-docker-build
     with:
       image-name: docker-regis.iex.ec/cvm-base
