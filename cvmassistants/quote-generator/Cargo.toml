@@ -1,0 +1,10 @@
+[package]
+name = "quote-generator"
+version = "1.0.0"
+edition = "2024"
+
+
+[dependencies]
+tdx-attest-rs = {git = "https://github.com/intel/confidential-computing.tee.dcap", tag = "DCAP_1.23"}
+log = "0.4"
+env_logger = "0.11"
