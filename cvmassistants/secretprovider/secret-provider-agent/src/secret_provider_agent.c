@@ -42,7 +42,7 @@
 
 rats_tls_log_level_t log_level = RATS_TLS_LOG_LEVEL_INFO;
 
-char *command_get_secret = "getSecret";
+const char *command_get_secret = "getSecret";
 
 char *get_secret_from_sbs_through_rats_tls(
     rats_tls_log_level_t log_level, const char *attester_type,
@@ -232,7 +232,7 @@ int main(int argc, char **argv) {
   const char *secret = "";
   LOG_INFO("Try to get key from SBS");
 
-  char *secret_save_path = NULL;
+  const char *secret_save_path = NULL;
   const char *sbs_endpoint = NULL;
   char ip_buf[INET_ADDRSTRLEN];
   const char *str_port = NULL;
