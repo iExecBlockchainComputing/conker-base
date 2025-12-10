@@ -70,11 +70,11 @@ char *generate_random_key(void) {
 int push_wrapkey_to_secret_box(const char *wrapkey) {
   CURL *curl;
   CURLcode res;
-  char request_buffer[64];
   long http_code = 0;
 
   curl = curl_easy_init();
   if (curl) {
+    char request_buffer[64];
     // get token
     curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "POST");
     curl_easy_setopt(curl, CURLOPT_URL, "http://127.0.0.1:9090/secret");
