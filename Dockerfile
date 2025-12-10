@@ -3,6 +3,7 @@ FROM ubuntu:24.04 AS build
 RUN apt-get update \
     && env DEBIAN_FRONTEND=noninteractive apt-get install -y \
     wget \
+    curl \
     pkg-config \
     unzip \
     build-essential
@@ -14,6 +15,10 @@ COPY . /cvm-agent
 
 RUN wget --no-proxy --progress=bar:force -c https://dl.google.com/go/go1.24.9.linux-amd64.tar.gz -O - | tar -xz -C /usr/local
 ENV PATH=$PATH:/usr/local/go/bin
+
+# Install latest Rust from official source
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH=/root/.cargo/bin:$PATH
 
 RUN cd /cvm-agent/apploader \
     && go build -ldflags "-w -s -X apploader/version.version=${VERSION}" -o apploader
@@ -27,11 +32,11 @@ RUN apt-get install -y \
     make    \
     cmake   \
     gcc     \
-    cargo   \
     libssl-dev \
     software-properties-common \
     libcurl4-openssl-dev \
-    libcbor-dev
+    libcbor-dev \
+    libclang-dev
 
 # RA-TLS DCAP libraries
 # https://download.01.org/intel-sgx/sgx_repo/ubuntu/dists/noble/main/binary-amd64/Packages
@@ -44,8 +49,6 @@ RUN echo 'deb [signed-by=/etc/apt/keyrings/intel-sgx-keyring.asc arch=amd64] htt
     libsgx-uae-service \
     libtdx-attest-dev \
     libsgx-dcap-default-qpl-dev
-
-RUN mkdir -p $HOME/.cargo/ && echo '[source.crates-io] \n registry = "git://mirrors.ustc.edu.cn/crates.io-index"' >> $HOME/.cargo/config
 
 ## todovm-cal 1005.1
 RUN git clone https://github.com/inclavare-containers/rats-tls.git /rats-tls\
@@ -62,6 +65,10 @@ RUN cd /cvm-agent/cvmassistants/keyprovider/key-provider-agent \
 
 RUN cd /cvm-agent/cvmassistants/secretprovider/secret-provider-agent \
     && make all
+
+# Build quote-generator
+RUN cd /cvm-agent/cvmassistants/quote-generator \
+    && cargo build --release
 
 # Final image
 FROM ubuntu:24.04
@@ -126,6 +133,10 @@ COPY --from=build  /usr/local/lib/rats-tls/  /usr/local/lib/rats-tls/
 #get secretprovier-agent
 RUN  mkdir -p /workplace/cvm-agent/cvmassistants/secretprovider
 COPY --from=build  /cvm-agent/cvmassistants/secretprovider/secret-provider-agent/secret_provider_agent /workplace/cvm-agent/cvmassistants/secretprovider
+
+#get quote-generator
+RUN mkdir -p /workplace/cvm-agent/cvmassistants/quote-generator
+COPY --from=build /cvm-agent/cvmassistants/quote-generator/target/release/quote-generator /workplace/cvm-agent/cvmassistants/quote-generator
 
 #config supervisord
 RUN apt-get update \
