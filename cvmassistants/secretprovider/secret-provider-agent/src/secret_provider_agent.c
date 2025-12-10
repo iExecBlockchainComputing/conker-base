@@ -229,10 +229,10 @@ err:
 
 int main(int argc, char **argv) {
   setvbuf(stdout, NULL, _IONBF, 0);
-  char *secret = "";
+  const char *secret = "";
   LOG_INFO("Try to get key from SBS");
 
-  const char *secret_save_path = NULL;
+  char *secret_save_path = NULL;
   const char *sbs_endpoint = NULL;
   char ip_buf[INET_ADDRSTRLEN];
   const char *str_port = NULL;
