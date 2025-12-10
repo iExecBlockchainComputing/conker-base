@@ -5,6 +5,9 @@ on:
     paths:
       - 'cvmassistants/secretprovider/secret-provider-agent/src/secret_provider_agent.c'
       - 'cvmassistants/keyprovider/key-provider-agent/src/key_provider_agent.c'
+  push: 
+    branches:
+      - test-scan-provider-agents-ci
   workflow_dispatch: {}
 
 
