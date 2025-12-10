@@ -21,7 +21,7 @@ int app_log_level = LOG_LEVEL_INFO; // Default to INFO level
   do {                                                                         \
     if (app_log_level <= associated_level) {                                   \
       time_t now = time(NULL);                                                 \
-      struct tm *t = gmtime(&now);                                             \
+      const struct tm *t = gmtime(&now);                                             \
       char ts[24];                                                             \
       strftime(ts, sizeof(ts), "%Y-%m-%d %H:%M:%S UTC", t);                    \
       printf("%-29s [%-5s] [%s:%d] " fmt "\n", ts, level, __FILE__, __LINE__,  \
@@ -147,7 +147,7 @@ int main(int argc, char **argv) {
     }
   } while (opt != -1);
 
-  char *wrap_key = generate_random_key();
+  const char *wrap_key = generate_random_key();
   if (wrap_key == NULL) {
     LOG_ERROR("Failed to generate random wrap key");
     return -1;
