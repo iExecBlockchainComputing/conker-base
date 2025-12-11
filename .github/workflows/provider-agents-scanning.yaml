@@ -55,6 +55,15 @@ jobs:
         with:
           source: ${{ matrix.provider-agent.dir }}/${{ matrix.provider-agent.file }}
           style: llvm
+          inplace: True
+
+      - uses: EndBug/add-and-commit@v9
+        with:
+          author_name: Clang Robot
+          author_email: robot@example.com
+          message: 'Committing clang-format changes'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: cppcheck scan ${{ matrix.provider-agent.file }} (SARIF)
         if: steps.changed.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
