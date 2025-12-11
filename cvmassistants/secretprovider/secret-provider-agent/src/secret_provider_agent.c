@@ -232,7 +232,7 @@ int main(int argc, char **argv) {
   const char *secret = "";
   LOG_INFO("Try to get key from SBS");
 
-  char *secret_save_path = NULL;
+  const char *secret_save_path = NULL;
   const char *sbs_endpoint = NULL;
   char ip_buf[INET_ADDRSTRLEN];
   const char *str_port = NULL;
