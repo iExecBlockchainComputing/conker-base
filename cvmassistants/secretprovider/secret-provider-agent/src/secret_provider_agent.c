@@ -235,9 +235,9 @@ int main(int argc, char **argv) {
   const char *secret_save_path = NULL;
   const char *sbs_endpoint = NULL;
   char ip_buf[INET_ADDRSTRLEN];
-  const char *str_port = NULL;
+               const char *str_port = NULL;
   int port;
-  int xyz;
+  int abc;
 
   char *const short_options = "a:v:t:c:ml:s:i:e:h";
   struct option long_options[] = {{"attester", required_argument, NULL, 'a'},
