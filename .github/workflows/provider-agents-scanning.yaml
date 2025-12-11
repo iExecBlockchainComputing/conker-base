@@ -65,7 +65,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: cppcheck scan ${{ matrix.provider-agent.file }} (SARIF)
+      - name: cppcheck scan ${{ matrix.provider-agent.file }} 
         if: steps.changed.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
         working-directory: ${{ matrix.provider-agent.dir }}
         run: |
