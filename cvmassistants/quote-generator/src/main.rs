@@ -80,9 +80,13 @@ fn create_tdx_report(report_data: &tdx_attest_rs::tdx_report_data_t) -> Result<t
     let mut tdx_report = tdx_attest_rs::tdx_report_t {
         d: [0; REPORT_SIZE],
     };
-    match tdx_attest_rs::tdx_att_get_report(Some(report_data), &mut tdx_report) {
+    let result = tdx_attest_rs::tdx_att_get_report(Some(report_data), &mut tdx_report);
+    match result {
         tdx_attest_rs::tdx_attest_error_t::TDX_ATTEST_SUCCESS => Ok(tdx_report),
-        _ => Err(QuoteGeneratorError::TdxReportFailed),
+        _ => {
+            error!("Failed to get TDX report: {:?}", result);
+            Err(QuoteGeneratorError::TdxReportFailed) // _tdx_attest_error_t does not implement std::error::Error
+        }
     }
 }
 
