@@ -38,10 +38,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install tools
+      - name: Install cppcheck
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang-format cppcheck
+          sudo apt-get install -y cppcheck
 
       - name: Check if file changed
         id: changed
@@ -51,9 +51,10 @@ jobs:
 
       - name: clang-format scan ${{ matrix.provider-agent.file }}
         if: steps.changed.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
-        working-directory: ${{ matrix.provider-agent.dir }}
-        run: |
-          clang-format --dry-run -style=llvm --Werror ${{ matrix.provider-agent.file }}
+        uses: DoozyX/clang-format-lint-action@v0.18.2
+        with:
+          source: ${{ matrix.provider-agent.dir }}/${{ matrix.provider-agent.file }}
+          style: llvm
 
       - name: cppcheck scan ${{ matrix.provider-agent.file }} (SARIF)
         if: steps.changed.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
