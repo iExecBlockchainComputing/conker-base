@@ -237,6 +237,7 @@ int main(int argc, char **argv) {
   char ip_buf[INET_ADDRSTRLEN];
   const char *str_port = NULL;
   int port;
+  int xyz;
 
   char *const short_options = "a:v:t:c:ml:s:i:e:h";
   struct option long_options[] = {{"attester", required_argument, NULL, 'a'},
