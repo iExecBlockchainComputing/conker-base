@@ -1,0 +1,49 @@
+name: scan-provider-agents
+
+on:
+  pull_request:
+    paths:
+      - 'cvmassistants/secretprovider/secret-provider-agent/src/secret_provider_agent.c'
+      - 'cvmassistants/keyprovider/key-provider-agent/src/key_provider_agent.c'
+  workflow_dispatch: {}
+
+jobs:
+  scan-provider-agents:
+
+    name: Scan ${{ matrix.provider-agent.file }}
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        provider-agent:
+          - dir: cvmassistants/secretprovider/secret-provider-agent/src
+            file: secret_provider_agent.c
+          - dir: cvmassistants/keyprovider/key-provider-agent/src
+            file: key_provider_agent.c
+      
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tools directly
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format cppcheck
+
+      - name: Check if file changed
+        id: changed
+        uses: tj-actions/changed-files@v47
+        with:
+          files: ${{ matrix.provider-agent.dir }}/${{ matrix.provider-agent.file }}
+
+      - name: clang-format scan ${{ matrix.provider-agent.file }}
+        if: steps.changed.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
+        working-directory: ${{ matrix.provider-agent.dir }}
+        run: |
+          clang-format --dry-run -style=llvm --Werror ${{ matrix.provider-agent.file }}
+
+      - name: cppcheck scan ${{ matrix.provider-agent.file }}
+        if: steps.changed.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
+        working-directory: ${{ matrix.provider-agent.dir }}
+        run: | # enable all checks and suppress missing include system since RATS-TLS dependencies are not included in the repo
+          cppcheck --enable=all --suppress=missingIncludeSystem --error-exitcode=1 ${{ matrix.provider-agent.file }}
