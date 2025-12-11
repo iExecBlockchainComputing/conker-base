@@ -64,28 +64,27 @@ fn create_report_data(input_bytes: &[u8]) -> Result<tdx_attest_rs::tdx_report_da
     Ok(report_data)
 }
 
-/// Generates and displays a TDX report for the given report data.
-///
-/// This function creates a TDX report and logs it at debug level.
-/// The report is only visible when the logger is configured to show debug messages.
+/// Creates a TDX report from the given report data.
 ///
 /// # Arguments
 ///
 /// * `report_data` - The report data to use for generating the TDX report
 ///
-/// # Exits
+/// # Returns
 ///
-/// Exits with status code 1 if the report generation fails
-fn display_tdx_report(report_data: &tdx_attest_rs::tdx_report_data_t) {
+/// A `Result` containing the `tdx_report_t` structure on success.
+///
+/// # Errors
+///
+/// Returns `QuoteGeneratorError::TdxReportFailed` if the report generation fails.
+fn create_tdx_report(report_data: &tdx_attest_rs::tdx_report_data_t) -> Result<tdx_attest_rs::tdx_report_t, QuoteGeneratorError> {
     let mut tdx_report = tdx_attest_rs::tdx_report_t {
         d: [0; REPORT_SIZE],
     };
-    let result = tdx_attest_rs::tdx_att_get_report(Some(report_data), &mut tdx_report);
-    if result != tdx_attest_rs::tdx_attest_error_t::TDX_ATTEST_SUCCESS {
-        error!("Failed to get the report");
-        process::exit(1);
+    match tdx_attest_rs::tdx_att_get_report(Some(report_data), &mut tdx_report) {
+        tdx_attest_rs::tdx_attest_error_t::TDX_ATTEST_SUCCESS => Ok(tdx_report),
+        _ => Err(QuoteGeneratorError::TdxReportFailed),
     }
-    debug!("TDX report: {:?}", tdx_report.d);
 }
 
 /// Creates a TDX attestation quote from the given report data.
@@ -156,7 +155,8 @@ fn main() -> Result<(), QuoteGeneratorError> {
     report_bytes[..input_bytes.len()].copy_from_slice(input_bytes);
 
     let report_data = create_report_data(&report_bytes)?;
-    display_tdx_report(&report_data); // Report is only displayed on debug mode - this function is optional
+    let tdx_report = create_tdx_report(&report_data)?; // Optional function
+    debug!("TDX report: {:?}", tdx_report.d);
     let quote = create_quote(&report_data);
     fs::write(QUOTE_FILE_NAME, quote).expect("Unable to write quote file");
     info!("Quote successfully written to {}", QUOTE_FILE_NAME);
