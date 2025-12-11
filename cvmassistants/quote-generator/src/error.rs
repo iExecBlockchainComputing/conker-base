@@ -4,8 +4,8 @@ use std::array::TryFromSliceError;
 
 #[derive(Error, Debug)]
 pub enum QuoteGeneratorError {
-    #[error("Invalid usage: expected exactly 1 argument (report data)")]
-    InvalidUsage,
+    #[error("Invalid usage: expected exactly 1 argument (report data), received {actual}")]
+    InvalidUsage { actual: usize },
 
     #[error("Report data must be at most {max} bytes, got {actual} bytes")]
     ReportDataTooLarge { max: usize, actual: usize },

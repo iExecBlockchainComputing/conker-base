@@ -132,8 +132,7 @@ fn main() -> Result<(), QuoteGeneratorError> {
 
     let args: Vec<String> = env::args().collect();
     if args.len() != 2 {
-        error!("Usage: {} <{}-byte-report-data>", args[0], REPORT_DATA_SIZE);
-        process::exit(1);
+        return Err(QuoteGeneratorError::InvalidUsage { actual: args.len() });
     }
 
     let input = &args[1];
