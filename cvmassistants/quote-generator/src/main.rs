@@ -156,7 +156,7 @@ fn main() -> Result<(), QuoteGeneratorError> {
     debug!("TDX report: {:?}", tdx_report.d);
     let quote = create_quote(&report_data)?;
     debug!("Quote: {:?}", quote);
-    fs::write(QUOTE_FILE_NAME, quote).expect("Unable to write quote file");
+    fs::write(QUOTE_FILE_NAME, quote)?;
     info!("Quote successfully written to {}", QUOTE_FILE_NAME);
 
     Ok(())
