@@ -155,6 +155,7 @@ fn main() -> Result<(), QuoteGeneratorError> {
     report_bytes[..input_bytes.len()].copy_from_slice(input_bytes);
 
     let report_data = create_report_data(&report_bytes)?;
+    debug!("Report data: {:?}", report_data.d);
     let tdx_report = create_tdx_report(&report_data)?; // Optional function
     debug!("TDX report: {:?}", tdx_report.d);
     let quote = create_quote(&report_data);
