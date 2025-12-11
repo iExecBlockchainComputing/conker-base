@@ -33,6 +33,8 @@ use log::{debug, error, info};
 use std::env;
 use std::fs;
 use std::process;
+mod error;
+use error::QuoteGeneratorError;
 
 const REPORT_DATA_SIZE: usize = 64;
 const REPORT_SIZE: usize = 1024;
@@ -49,18 +51,17 @@ const QUOTE_FILE_NAME: &str = "quote.dat";
 ///
 /// # Returns
 ///
-/// A `tdx_report_data_t` structure containing the input bytes.
+/// A `Result` containing the `tdx_report_data_t` structure, or a `QuoteGeneratorError`
+/// if the input bytes cannot be converted.
 ///
-/// # Panics
+/// # Errors
 ///
-/// Panics if `input_bytes` length doesn't match `REPORT_DATA_SIZE` (due to `try_into().unwrap()`).
-fn create_report_data(input_bytes: &[u8]) -> tdx_attest_rs::tdx_report_data_t {
+/// Returns `QuoteGeneratorError::ReportDataConversion` if input bytes length doesn't match `REPORT_DATA_SIZE`.
+fn create_report_data(input_bytes: &[u8]) -> Result<tdx_attest_rs::tdx_report_data_t, QuoteGeneratorError> {
     let report_data = tdx_attest_rs::tdx_report_data_t {
-        d: input_bytes.try_into().unwrap(),
+        d: input_bytes.try_into()?,
     };
-    debug!("TDX report data: {:?}", report_data.d);
-
-    report_data
+    Ok(report_data)
 }
 
 /// Generates and displays a TDX report for the given report data.
@@ -130,7 +131,7 @@ fn create_quote(report_data: &tdx_attest_rs::tdx_report_data_t) -> Vec<u8> {
     }
 }
 
-fn main() {
+fn main() -> Result<(), QuoteGeneratorError> {
     // Initialize the logger (defaults to INFO level, override with RUST_LOG env var)
     env_logger::init();
 
@@ -154,9 +155,11 @@ fn main() {
     let mut report_bytes = [0u8; REPORT_DATA_SIZE];
     report_bytes[..input_bytes.len()].copy_from_slice(input_bytes);
 
-    let report_data = create_report_data(&report_bytes);
+    let report_data = create_report_data(&report_bytes)?;
     display_tdx_report(&report_data); // Report is only displayed on debug mode - this function is optional
     let quote = create_quote(&report_data);
     fs::write(QUOTE_FILE_NAME, quote).expect("Unable to write quote file");
     info!("Quote successfully written to {}", QUOTE_FILE_NAME);
+
+    Ok(())
 }
