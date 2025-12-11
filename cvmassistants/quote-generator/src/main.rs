@@ -38,7 +38,6 @@ use error::QuoteGeneratorError;
 const REPORT_DATA_SIZE: usize = 64;
 const REPORT_SIZE: usize = 1024;
 const TDX_UUID_SIZE: usize = 16;
-const QUOTE_FILE_NAME: &str = "quote.dat";
 
 /// Creates a TDX report data structure from input bytes.
 ///
@@ -156,8 +155,9 @@ fn main() -> Result<(), QuoteGeneratorError> {
     debug!("TDX report: {:?}", tdx_report.d);
     let quote = create_quote(&report_data)?;
     debug!("Quote: {:?}", quote);
-    fs::write(QUOTE_FILE_NAME, quote)?;
-    info!("Quote successfully written to {}", QUOTE_FILE_NAME);
+    let quote_filename = format!("quote-{}.dat", input);
+    fs::write(&quote_filename, quote)?;
+    info!("Quote successfully written to {}", quote_filename);
 
     Ok(())
 }
