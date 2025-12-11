@@ -29,10 +29,9 @@
  *
  */
 
-use log::{debug, error, info};
+use log::{debug, info};
 use std::env;
 use std::fs;
-use std::process;
 mod error;
 use error::QuoteGeneratorError;
 
