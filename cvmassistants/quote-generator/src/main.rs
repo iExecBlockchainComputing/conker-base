@@ -29,7 +29,7 @@
  *
  */
 
-use log::{debug, info};
+use log::{debug, error, info};
 use std::env;
 use std::fs;
 mod error;
@@ -121,7 +121,10 @@ fn create_quote(report_data: &tdx_attest_rs::tdx_report_data_t) -> Result<Vec<u8
                 None => Err(QuoteGeneratorError::TdxQuoteEmpty),
             }
         },
-        _ => Err(QuoteGeneratorError::TdxQuoteFailed),
+        _ => {
+            error!("Failed to get TDX quote: {:?}", result);
+            Err(QuoteGeneratorError::TdxQuoteFailed) // _tdx_attest_error_t does not implement std::error::Error
+        }
     }
 }
 
