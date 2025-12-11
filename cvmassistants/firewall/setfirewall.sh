@@ -22,7 +22,7 @@ log_warn() {
 }
 
 log_fatal() {
-  echo -e "[ERROR] $*" >&2
+  echo -e "[ERROR] $*" >&2 
   exit 1
 }
 
