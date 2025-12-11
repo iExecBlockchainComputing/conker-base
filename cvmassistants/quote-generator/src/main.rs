@@ -139,12 +139,7 @@ fn main() -> Result<(), QuoteGeneratorError> {
     let input = &args[1];
     let input_bytes = input.as_bytes();
     if input_bytes.len() > REPORT_DATA_SIZE {
-        error!(
-            "report_data must be at most {} bytes, got {} bytes",
-            REPORT_DATA_SIZE,
-            input_bytes.len()
-        );
-        process::exit(1);
+        return Err(QuoteGeneratorError::ReportDataTooLarge { max: REPORT_DATA_SIZE, actual: input_bytes.len() });
     }
 
     let mut report_bytes = [0u8; REPORT_DATA_SIZE];
