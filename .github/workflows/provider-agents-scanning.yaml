@@ -13,7 +13,6 @@ on:
       - 'cvmassistants/keyprovider/key-provider-agent/src/key_provider_agent.c'
   workflow_dispatch: {}
 
-
 jobs:
   scan-provider-agents:
 
@@ -29,12 +28,17 @@ jobs:
           - dir: cvmassistants/keyprovider/key-provider-agent/src
             file: key_provider_agent.c
       
+    permissions:
+      security-events: write
+      contents: read
+      actions: read
+
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Install tools directly
+      - name: Install tools
         run: |
           sudo apt-get update
           sudo apt-get install -y clang-format cppcheck
@@ -51,8 +55,22 @@ jobs:
         run: |
           clang-format --dry-run -style=llvm --Werror ${{ matrix.provider-agent.file }}
 
-      - name: cppcheck scan ${{ matrix.provider-agent.file }}
+      - name: cppcheck scan ${{ matrix.provider-agent.file }} (SARIF)
         if: steps.changed.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
         working-directory: ${{ matrix.provider-agent.dir }}
-        run: | # enable all checks and suppress missing include system since RATS-TLS dependencies are not included in the repo
-          cppcheck --enable=all --suppress=missingIncludeSystem --error-exitcode=1 ${{ matrix.provider-agent.file }}
+        run: |
+          cppcheck --enable=all --suppress=missingIncludeSystem --xml --output-file=report.xml ${{ matrix.provider-agent.file }}
+
+      - name: Convert cppcheck XML → SARIF
+        if: steps.changed.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
+        uses: Flast/cppcheck-sarif@v2
+        with:
+          input: ${{ matrix.provider-agent.dir }}/report.xml
+          output: ${{ matrix.provider-agent.dir }}/report.sarif
+
+      - name: Upload SARIF to GitHub Code Scanning
+        if: steps.changed.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ${{ matrix.provider-agent.dir }}/report.sarif
+          category: cppcheck
