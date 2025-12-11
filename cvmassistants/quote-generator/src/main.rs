@@ -33,7 +33,6 @@ use log::{debug, error, info};
 use std::env;
 use std::fs;
 use std::process;
-use tdx_attest_rs;
 
 const REPORT_DATA_SIZE: usize = 64;
 const REPORT_SIZE: usize = 1024;
