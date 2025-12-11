@@ -22,13 +22,20 @@ jobs:
           - dir: cvmassistants/keyprovider/key-provider-agent/src
             file: key_provider_agent.c
       
+    permissions:
+      security-events: write
+      contents: write
+      actions: read
+
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Install tools directly
+      - name: Install cppcheck
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang-format cppcheck
+          sudo apt-get install -y cppcheck
 
       - name: Check if file changed
         id: changed
@@ -38,12 +45,36 @@ jobs:
 
       - name: clang-format scan ${{ matrix.provider-agent.file }}
         if: steps.changed.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
-        working-directory: ${{ matrix.provider-agent.dir }}
-        run: |
-          clang-format --dry-run -style=llvm --Werror ${{ matrix.provider-agent.file }}
+        uses: DoozyX/clang-format-lint-action@v0.18.2
+        with:
+          source: ${{ matrix.provider-agent.dir }}/${{ matrix.provider-agent.file }}
+          style: llvm
+          inplace: True
 
-      - name: cppcheck scan ${{ matrix.provider-agent.file }}
+      - uses: EndBug/add-and-commit@v9
+        with:
+          author_name: Clang Robot
+          author_email: robot@example.com
+          message: 'fix: action - committing clang-format changes'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: cppcheck scan ${{ matrix.provider-agent.file }} 
         if: steps.changed.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
         working-directory: ${{ matrix.provider-agent.dir }}
-        run: | # enable all checks and suppress missing include system since RATS-TLS dependencies are not included in the repo
-          cppcheck --enable=all --suppress=missingIncludeSystem --error-exitcode=1 ${{ matrix.provider-agent.file }}
+        run: |
+          cppcheck --enable=all --suppress=missingIncludeSystem --xml --output-file=report.xml ${{ matrix.provider-agent.file }}
+
+      - name: Convert cppcheck XML → SARIF
+        if: steps.changed.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
+        uses: Flast/cppcheck-sarif@v2
+        with:
+          input: ${{ matrix.provider-agent.dir }}/report.xml
+          output: ${{ matrix.provider-agent.dir }}/report.sarif
+
+      - name: Upload SARIF to GitHub Code Scanning
+        if: steps.changed.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: ${{ matrix.provider-agent.dir }}/report.sarif
+          category: cppcheck
