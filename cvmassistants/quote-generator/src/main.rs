@@ -55,7 +55,9 @@ const TDX_UUID_SIZE: usize = 16;
 /// # Errors
 ///
 /// Returns `QuoteGeneratorError::ReportDataConversion` if input bytes length doesn't match `REPORT_DATA_SIZE`.
-fn create_report_data(input_bytes: &[u8]) -> Result<tdx_attest_rs::tdx_report_data_t, QuoteGeneratorError> {
+fn create_report_data(
+    input_bytes: &[u8],
+) -> Result<tdx_attest_rs::tdx_report_data_t, QuoteGeneratorError> {
     let report_data = tdx_attest_rs::tdx_report_data_t {
         d: input_bytes.try_into()?,
     };
@@ -75,7 +77,9 @@ fn create_report_data(input_bytes: &[u8]) -> Result<tdx_attest_rs::tdx_report_da
 /// # Errors
 ///
 /// Returns `QuoteGeneratorError::TdxReportFailed` if the report generation fails.
-fn create_tdx_report(report_data: &tdx_attest_rs::tdx_report_data_t) -> Result<tdx_attest_rs::tdx_report_t, QuoteGeneratorError> {
+fn create_tdx_report(
+    report_data: &tdx_attest_rs::tdx_report_data_t,
+) -> Result<tdx_attest_rs::tdx_report_t, QuoteGeneratorError> {
     let mut tdx_report = tdx_attest_rs::tdx_report_t {
         d: [0; REPORT_SIZE],
     };
@@ -106,7 +110,9 @@ fn create_tdx_report(report_data: &tdx_attest_rs::tdx_report_data_t) -> Result<t
 ///
 /// * `QuoteGeneratorError::TdxQuoteFailed` - if the quote generation API call fails.
 /// * `QuoteGeneratorError::TdxQuoteEmpty` - if the API succeeds but returns no quote data.
-fn create_quote(report_data: &tdx_attest_rs::tdx_report_data_t) -> Result<Vec<u8>, QuoteGeneratorError> {
+fn create_quote(
+    report_data: &tdx_attest_rs::tdx_report_data_t,
+) -> Result<Vec<u8>, QuoteGeneratorError> {
     let mut selected_att_key_id = tdx_attest_rs::tdx_uuid_t {
         d: [0; TDX_UUID_SIZE],
     };
@@ -118,11 +124,9 @@ fn create_quote(report_data: &tdx_attest_rs::tdx_report_data_t) -> Result<Vec<u8
     );
 
     match result {
-        tdx_attest_rs::tdx_attest_error_t::TDX_ATTEST_SUCCESS => {
-            match quote {
-                Some(q) => Ok(q),
-                None => Err(QuoteGeneratorError::TdxQuoteEmpty),
-            }
+        tdx_attest_rs::tdx_attest_error_t::TDX_ATTEST_SUCCESS => match quote {
+            Some(q) => Ok(q),
+            None => Err(QuoteGeneratorError::TdxQuoteEmpty),
         },
         _ => {
             error!("Failed to get TDX quote: {:?}", result);
@@ -143,7 +147,10 @@ fn main() -> Result<(), QuoteGeneratorError> {
     let input = &args[1];
     let input_bytes = input.as_bytes();
     if input_bytes.len() > REPORT_DATA_SIZE {
-        return Err(QuoteGeneratorError::ReportDataTooLarge { max: REPORT_DATA_SIZE, actual: input_bytes.len() });
+        return Err(QuoteGeneratorError::ReportDataTooLarge {
+            max: REPORT_DATA_SIZE,
+            actual: input_bytes.len(),
+        });
     }
 
     let mut report_bytes = [0u8; REPORT_DATA_SIZE];
