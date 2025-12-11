@@ -70,7 +70,7 @@ jobs:
 
       - name: Upload SARIF to GitHub Code Scanning
         if: steps.changed.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: ${{ matrix.provider-agent.dir }}/report.sarif
           category: cppcheck
