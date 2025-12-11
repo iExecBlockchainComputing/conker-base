@@ -8,3 +8,4 @@ edition = "2024"
 tdx-attest-rs = {git = "https://github.com/intel/confidential-computing.tee.dcap", tag = "DCAP_1.23"}
 log = "0.4"
 env_logger = "0.11"
+thiserror = "2.0"

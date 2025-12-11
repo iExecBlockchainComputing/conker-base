@@ -1,0 +1,6 @@
+{
+    "rust-analyzer.linkedProjects": [
+        "cvmassistants/quote-generator/Cargo.toml"
+    ]
+}
+
