@@ -98,12 +98,13 @@ fn create_tdx_report(report_data: &tdx_attest_rs::tdx_report_data_t) -> Result<t
 ///
 /// # Returns
 ///
-/// A `Vec<u8>` containing the generated quote data
+/// A `Result` containing the generated quote data as `Vec<u8>` on success.
 ///
-/// # Exits
+/// # Errors
 ///
-/// Exits with status code 1 if quote generation fails
-fn create_quote(report_data: &tdx_attest_rs::tdx_report_data_t) -> Vec<u8> {
+/// * `QuoteGeneratorError::TdxQuoteFailed` - if the quote generation API call fails.
+/// * `QuoteGeneratorError::TdxQuoteEmpty` - if the API succeeds but returns no quote data.
+fn create_quote(report_data: &tdx_attest_rs::tdx_report_data_t) -> Result<Vec<u8>, QuoteGeneratorError> {
     let mut selected_att_key_id = tdx_attest_rs::tdx_uuid_t {
         d: [0; TDX_UUID_SIZE],
     };
@@ -113,20 +114,15 @@ fn create_quote(report_data: &tdx_attest_rs::tdx_report_data_t) -> Vec<u8> {
         Some(&mut selected_att_key_id),
         0,
     );
-    if result != tdx_attest_rs::tdx_attest_error_t::TDX_ATTEST_SUCCESS {
-        error!("Failed to get the quote");
-        process::exit(1);
-    }
-    match quote {
-        Some(q) => {
-            debug!("Successfully generated TDX quote with {} bytes", q.len());
-            debug!("Quote: {:?}", q);
-            q
-        }
-        None => {
-            error!("Failed to get the quote");
-            process::exit(1);
-        }
+
+    match result {
+        tdx_attest_rs::tdx_attest_error_t::TDX_ATTEST_SUCCESS => {
+            match quote {
+                Some(q) => Ok(q),
+                None => Err(QuoteGeneratorError::TdxQuoteEmpty),
+            }
+        },
+        _ => Err(QuoteGeneratorError::TdxQuoteFailed),
     }
 }
 
@@ -158,7 +154,8 @@ fn main() -> Result<(), QuoteGeneratorError> {
     debug!("Report data: {:?}", report_data.d);
     let tdx_report = create_tdx_report(&report_data)?; // Optional function
     debug!("TDX report: {:?}", tdx_report.d);
-    let quote = create_quote(&report_data);
+    let quote = create_quote(&report_data)?;
+    debug!("Quote: {:?}", quote);
     fs::write(QUOTE_FILE_NAME, quote).expect("Unable to write quote file");
     info!("Quote successfully written to {}", QUOTE_FILE_NAME);
 
