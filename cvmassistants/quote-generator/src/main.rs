@@ -64,8 +64,10 @@ fn main() -> Result<(), QuoteGeneratorError> {
 
     let report_data = create_report_data(&report_bytes)?;
     debug!("Report data: {:?}", report_data.d);
-    let tdx_report = create_tdx_report(&report_data)?; // Optional function
-    debug!("TDX report: {:?}", tdx_report.d);
+    if log::log_enabled!(log::Level::Debug) {
+        let tdx_report = create_tdx_report(&report_data)?;
+        println!("TDX report: {:?}", tdx_report.d);
+    }
     let quote = create_quote(&report_data)?;
     debug!("Quote: {:?}", quote);
     let quote_filename = format!("quote-{}.dat", input);
