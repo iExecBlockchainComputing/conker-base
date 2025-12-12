@@ -36,8 +36,8 @@ mod error;
 use error::QuoteGeneratorError;
 mod utils;
 use utils::{create_quote, create_report_data, create_tdx_report};
-
-const REPORT_DATA_SIZE: usize = 64;
+mod constants;
+use constants::REPORT_DATA_SIZE;
 
 fn main() -> Result<(), QuoteGeneratorError> {
     // Initialize the logger (defaults to INFO level, override with RUST_LOG env var)
@@ -45,7 +45,9 @@ fn main() -> Result<(), QuoteGeneratorError> {
 
     let args: Vec<String> = env::args().collect();
     if args.len() != 2 {
-        return Err(QuoteGeneratorError::InvalidUsage { actual: args.len()-1 });
+        return Err(QuoteGeneratorError::InvalidUsage {
+            actual: args.len() - 1,
+        });
     }
 
     let input = &args[1];

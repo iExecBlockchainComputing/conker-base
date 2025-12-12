@@ -1,8 +1,6 @@
+use crate::constants::{REPORT_SIZE, TDX_UUID_SIZE};
 use crate::error::QuoteGeneratorError;
 use log::error;
-
-const REPORT_SIZE: usize = 1024;
-const TDX_UUID_SIZE: usize = 16;
 
 /// Creates a TDX report data structure from input bytes.
 ///
