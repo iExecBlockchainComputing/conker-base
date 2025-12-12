@@ -24,7 +24,7 @@ jobs:
       
     permissions:
       security-events: write
-      contents: write
+      contents: read
       actions: read
 
     steps:
@@ -42,20 +42,15 @@ jobs:
         uses: tj-actions/changed-files@v47
         with:
           files: ${{ matrix.provider-agent.dir }}/${{ matrix.provider-agent.file }}
-
+      
+      # correct using: clang-format -style=llvm -i ${{ matrix.provider-agent.dir }}/${{ matrix.provider-agent.file }}
       - name: clang-format scan ${{ matrix.provider-agent.file }}
         if: steps.changed.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
         uses: DoozyX/clang-format-lint-action@v0.18.2
         with:
           source: ${{ matrix.provider-agent.dir }}/${{ matrix.provider-agent.file }}
           style: llvm
-          inplace: True
-
-      - uses: EndBug/add-and-commit@v9
-        with:
-          message: 'fix: action - committing clang-format changes'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          inplace: False
 
       - name: cppcheck scan ${{ matrix.provider-agent.file }} 
         if: steps.changed.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
