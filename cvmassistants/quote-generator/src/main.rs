@@ -45,7 +45,7 @@ fn main() -> Result<(), QuoteGeneratorError> {
 
     let args: Vec<String> = env::args().collect();
     if args.len() != 2 {
-        return Err(QuoteGeneratorError::InvalidUsage { actual: args.len() });
+        return Err(QuoteGeneratorError::InvalidUsage { actual: args.len()-1 });
     }
 
     let input = &args[1];
