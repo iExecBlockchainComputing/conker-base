@@ -66,7 +66,7 @@ fn main() -> Result<(), QuoteGeneratorError> {
     debug!("Report data: {:?}", report_data.d);
     if log::log_enabled!(log::Level::Debug) {
         let tdx_report = create_tdx_report(&report_data)?;
-        println!("TDX report: {:?}", tdx_report.d);
+        debug!("TDX report: {:?}", tdx_report.d);
     }
     let quote = create_quote(&report_data)?;
     debug!("Quote: {:?}", quote);
