@@ -30,7 +30,7 @@ jobs:
       
     permissions:
       security-events: write
-      contents: write
+      contents: read
       actions: read
 
     steps:
