@@ -55,13 +55,7 @@ jobs:
         with:
           source: ${{ matrix.provider-agent.dir }}/${{ matrix.provider-agent.file }}
           style: llvm
-          inplace: True
-
-      - uses: EndBug/add-and-commit@v9
-        with:
-          message: 'fix: action - committing clang-format changes'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          inplace: False
 
       - name: cppcheck scan ${{ matrix.provider-agent.file }} 
         if: steps.changed.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
