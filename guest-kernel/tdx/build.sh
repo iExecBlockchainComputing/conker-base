@@ -1,7 +1,7 @@
 set -e
 git clone -b master --single-branch --depth 1 https://git.launchpad.net/~ubuntu-kernel/ubuntu/+source/linux/+git/noble linux
 cd linux
-cp ../config .config
+cp ../tdx/config .config
 
 apt install -y libelf-dev zstd flex bison libssl-dev bc
 
