@@ -1,4 +1,5 @@
 apploader/conf/local.yml
 cvmassistants/quote-generator/target
+guest-kernel/tdx/linux
 
 .vscode

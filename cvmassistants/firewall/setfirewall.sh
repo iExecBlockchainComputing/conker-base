@@ -9,7 +9,8 @@
 # Requirements:
 #   - Must be run as root
 #   - Must run on Ubuntu
-#   - iptables and UFW must be installed
+#   - UFW must be installed
+#   - Uses nftables backend (modern approach)
 #
 ###############################################################################
 
@@ -33,13 +34,13 @@ if ! grep -q "ID=ubuntu" /etc/os-release; then
     log_fatal "This script supports only Ubuntu. Aborting."
 fi
 
-# Load ip_tables module
-log_info "Loading ip_tables module..."
-modprobe ip_tables 2>/dev/null
+# Load nftables modules (if not built-in)
+log_info "Loading nftables modules..."
+modprobe nf_tables 2>/dev/null
 if [ $? -ne 0 ]; then
-    log_warn "Could not load ip_tables (module missing or already loaded)."
+    log_warn "Could not load nf_tables (module missing or already loaded)."
 else
-    log_info "ip_tables loaded successfully."
+    log_info "nf_tables loaded successfully."
 fi
 
 # Enable UFW
